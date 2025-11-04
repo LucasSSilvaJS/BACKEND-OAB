@@ -3,6 +3,7 @@ from datetime import date
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from src.routes.dependencies import get_db
+from src.routes.auth_dependencies import require_any_user, AuthUser
 from src.schemas.sessao import SessaoCreate, SessaoUpdate, SessaoResponse
 from src.schemas.comum import MensagemResponse
 from src.services.sessao_service import SessaoService
@@ -22,7 +23,11 @@ router = APIRouter(
     description="Cria uma nova sessão de uso de computador. O computador deve estar disponível.",
     response_description="Sessão criada com sucesso",
 )
-def criar_sessao(sessao: SessaoCreate, db: Session = Depends(get_db)):
+def criar_sessao(
+    sessao: SessaoCreate,
+    current_user: AuthUser = Depends(require_any_user),
+    db: Session = Depends(get_db)
+):
     """
     Cria uma nova sessão de uso de computador.
 
@@ -48,6 +53,7 @@ def criar_sessao(sessao: SessaoCreate, db: Session = Depends(get_db)):
 def listar_sessoes(
     skip: int = 0,
     limit: int = 100,
+    current_user: AuthUser = Depends(require_any_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -66,7 +72,10 @@ def listar_sessoes(
     summary="Listar sessões ativas",
     description="Retorna todas as sessões que estão atualmente ativas (não finalizadas).",
 )
-def listar_sessoes_ativas(db: Session = Depends(get_db)):
+def listar_sessoes_ativas(
+    current_user: AuthUser = Depends(require_any_user),
+    db: Session = Depends(get_db)
+):
     """
     Lista todas as sessões que estão atualmente ativas.
     """
@@ -80,7 +89,11 @@ def listar_sessoes_ativas(db: Session = Depends(get_db)):
     summary="Obter sessão por ID",
     description="Retorna os detalhes de uma sessão específica pelo seu ID.",
 )
-def obter_sessao(sessao_id: int, db: Session = Depends(get_db)):
+def obter_sessao(
+    sessao_id: int,
+    current_user: AuthUser = Depends(require_any_user),
+    db: Session = Depends(get_db)
+):
     """
     Retorna os detalhes de uma sessão específica.
 
@@ -96,7 +109,11 @@ def obter_sessao(sessao_id: int, db: Session = Depends(get_db)):
     summary="Listar sessões por usuário",
     description="Retorna todas as sessões de um usuário advogado específico.",
 )
-def listar_sessoes_por_usuario(usuario_id: int, db: Session = Depends(get_db)):
+def listar_sessoes_por_usuario(
+    usuario_id: int,
+    current_user: AuthUser = Depends(require_any_user),
+    db: Session = Depends(get_db)
+):
     """
     Lista todas as sessões de um usuário advogado.
 
@@ -112,7 +129,11 @@ def listar_sessoes_por_usuario(usuario_id: int, db: Session = Depends(get_db)):
     summary="Listar sessões por data",
     description="Retorna todas as sessões de uma data específica (formato: YYYY-MM-DD).",
 )
-def listar_sessoes_por_data(data: date, db: Session = Depends(get_db)):
+def listar_sessoes_por_data(
+    data: date,
+    current_user: AuthUser = Depends(require_any_user),
+    db: Session = Depends(get_db)
+):
     """
     Lista todas as sessões de uma data específica.
 
@@ -131,6 +152,7 @@ def listar_sessoes_por_data(data: date, db: Session = Depends(get_db)):
 def atualizar_sessao(
     sessao_id: int,
     sessao: SessaoUpdate,
+    current_user: AuthUser = Depends(require_any_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -149,7 +171,11 @@ def atualizar_sessao(
     summary="Finalizar sessão",
     description="Finaliza uma sessão ativa, registrando o horário de término e desativando a sessão.",
 )
-def finalizar_sessao(sessao_id: int, db: Session = Depends(get_db)):
+def finalizar_sessao(
+    sessao_id: int,
+    current_user: AuthUser = Depends(require_any_user),
+    db: Session = Depends(get_db)
+):
     """
     Finaliza uma sessão ativa.
 
@@ -165,7 +191,11 @@ def finalizar_sessao(sessao_id: int, db: Session = Depends(get_db)):
     summary="Deletar sessão",
     description="Remove uma sessão do sistema. Esta operação é irreversível.",
 )
-def deletar_sessao(sessao_id: int, db: Session = Depends(get_db)):
+def deletar_sessao(
+    sessao_id: int,
+    current_user: AuthUser = Depends(require_any_user),
+    db: Session = Depends(get_db)
+):
     """
     Deleta uma sessão do sistema.
 

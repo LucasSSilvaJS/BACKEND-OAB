@@ -2,6 +2,7 @@ from typing import List
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from src.routes.dependencies import get_db
+from src.routes.auth_dependencies import require_any_user, AuthUser
 from src.schemas.sala_coworking import SalaCoworkingCreate, SalaCoworkingUpdate, SalaCoworkingResponse
 from src.schemas.comum import MensagemResponse
 from src.services.sala_coworking_service import SalaCoworkingService
@@ -21,7 +22,11 @@ router = APIRouter(
     description="Cria uma nova sala de coworking no sistema. Deve estar vinculada a uma subsecional e unidade válidas.",
     response_description="Sala de coworking criada com sucesso",
 )
-def criar_sala(sala: SalaCoworkingCreate, db: Session = Depends(get_db)):
+def criar_sala(
+    sala: SalaCoworkingCreate,
+    current_user: AuthUser = Depends(require_any_user),
+    db: Session = Depends(get_db)
+):
     """
     Cria uma nova sala de coworking no sistema.
 
@@ -43,6 +48,7 @@ def criar_sala(sala: SalaCoworkingCreate, db: Session = Depends(get_db)):
 def listar_salas(
     skip: int = 0,
     limit: int = 100,
+    current_user: AuthUser = Depends(require_any_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -61,7 +67,11 @@ def listar_salas(
     summary="Obter sala por ID",
     description="Retorna os detalhes de uma sala de coworking específica pelo seu ID.",
 )
-def obter_sala(coworking_id: int, db: Session = Depends(get_db)):
+def obter_sala(
+    coworking_id: int,
+    current_user: AuthUser = Depends(require_any_user),
+    db: Session = Depends(get_db)
+):
     """
     Retorna os detalhes de uma sala de coworking específica.
 
@@ -77,7 +87,11 @@ def obter_sala(coworking_id: int, db: Session = Depends(get_db)):
     summary="Listar salas por subsecional",
     description="Retorna todas as salas de coworking de uma subsecional específica.",
 )
-def listar_salas_por_subsecional(subsecional_id: int, db: Session = Depends(get_db)):
+def listar_salas_por_subsecional(
+    subsecional_id: int,
+    current_user: AuthUser = Depends(require_any_user),
+    db: Session = Depends(get_db)
+):
     """
     Lista todas as salas de coworking de uma subsecional.
 
@@ -93,7 +107,11 @@ def listar_salas_por_subsecional(subsecional_id: int, db: Session = Depends(get_
     summary="Listar salas por unidade",
     description="Retorna todas as salas de coworking de uma unidade específica.",
 )
-def listar_salas_por_unidade(unidade_id: int, db: Session = Depends(get_db)):
+def listar_salas_por_unidade(
+    unidade_id: int,
+    current_user: AuthUser = Depends(require_any_user),
+    db: Session = Depends(get_db)
+):
     """
     Lista todas as salas de coworking de uma unidade.
 
@@ -112,6 +130,7 @@ def listar_salas_por_unidade(unidade_id: int, db: Session = Depends(get_db)):
 def atualizar_sala(
     coworking_id: int,
     sala: SalaCoworkingUpdate,
+    current_user: AuthUser = Depends(require_any_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -130,7 +149,11 @@ def atualizar_sala(
     summary="Deletar sala de coworking",
     description="Remove uma sala de coworking do sistema. Esta operação é irreversível.",
 )
-def deletar_sala(coworking_id: int, db: Session = Depends(get_db)):
+def deletar_sala(
+    coworking_id: int,
+    current_user: AuthUser = Depends(require_any_user),
+    db: Session = Depends(get_db)
+):
     """
     Deleta uma sala de coworking do sistema.
 

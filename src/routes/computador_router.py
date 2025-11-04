@@ -2,6 +2,7 @@ from typing import List
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from src.routes.dependencies import get_db
+from src.routes.auth_dependencies import require_any_user, AuthUser
 from src.schemas.computador import ComputadorCreate, ComputadorUpdate, ComputadorResponse
 from src.schemas.comum import MensagemResponse
 from src.services.computador_service import ComputadorService
@@ -21,7 +22,11 @@ router = APIRouter(
     description="Cria um novo computador no sistema. O IP e número de tombamento devem ser únicos.",
     response_description="Computador criado com sucesso",
 )
-def criar_computador(computador: ComputadorCreate, db: Session = Depends(get_db)):
+def criar_computador(
+    computador: ComputadorCreate,
+    current_user: AuthUser = Depends(require_any_user),
+    db: Session = Depends(get_db)
+):
     """
     Cria um novo computador no sistema.
 
@@ -42,6 +47,7 @@ def criar_computador(computador: ComputadorCreate, db: Session = Depends(get_db)
 def listar_computadores(
     skip: int = 0,
     limit: int = 100,
+    current_user: AuthUser = Depends(require_any_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -60,7 +66,11 @@ def listar_computadores(
     summary="Obter computador por ID",
     description="Retorna os detalhes de um computador específico pelo seu ID.",
 )
-def obter_computador(computador_id: int, db: Session = Depends(get_db)):
+def obter_computador(
+    computador_id: int,
+    current_user: AuthUser = Depends(require_any_user),
+    db: Session = Depends(get_db)
+):
     """
     Retorna os detalhes de um computador específico.
 
@@ -76,7 +86,11 @@ def obter_computador(computador_id: int, db: Session = Depends(get_db)):
     summary="Listar computadores por sala",
     description="Retorna todos os computadores de uma sala de coworking específica.",
 )
-def listar_computadores_por_coworking(coworking_id: int, db: Session = Depends(get_db)):
+def listar_computadores_por_coworking(
+    coworking_id: int,
+    current_user: AuthUser = Depends(require_any_user),
+    db: Session = Depends(get_db)
+):
     """
     Lista todos os computadores de uma sala de coworking.
 
@@ -95,6 +109,7 @@ def listar_computadores_por_coworking(coworking_id: int, db: Session = Depends(g
 def atualizar_computador(
     computador_id: int,
     computador: ComputadorUpdate,
+    current_user: AuthUser = Depends(require_any_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -113,7 +128,11 @@ def atualizar_computador(
     summary="Deletar computador",
     description="Remove um computador do sistema. Esta operação é irreversível.",
 )
-def deletar_computador(computador_id: int, db: Session = Depends(get_db)):
+def deletar_computador(
+    computador_id: int,
+    current_user: AuthUser = Depends(require_any_user),
+    db: Session = Depends(get_db)
+):
     """
     Deleta um computador do sistema.
 

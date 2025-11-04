@@ -2,6 +2,7 @@ from typing import List
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from src.routes.dependencies import get_db
+from src.routes.auth_dependencies import require_any_user, AuthUser
 from src.schemas.unidade import UnidadeCreate, UnidadeUpdate, UnidadeResponse
 from src.schemas.comum import MensagemResponse
 from src.services.unidade_service import UnidadeService
@@ -21,7 +22,11 @@ router = APIRouter(
     description="Cria uma nova unidade no sistema. Deve estar vinculada a uma subsecional válida.",
     response_description="Unidade criada com sucesso",
 )
-def criar_unidade(unidade: UnidadeCreate, db: Session = Depends(get_db)):
+def criar_unidade(
+    unidade: UnidadeCreate,
+    current_user: AuthUser = Depends(require_any_user),
+    db: Session = Depends(get_db)
+):
     """
     Cria uma nova unidade no sistema.
 
@@ -45,6 +50,7 @@ def criar_unidade(unidade: UnidadeCreate, db: Session = Depends(get_db)):
 def listar_unidades(
     skip: int = 0,
     limit: int = 100,
+    current_user: AuthUser = Depends(require_any_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -63,7 +69,11 @@ def listar_unidades(
     summary="Obter unidade por ID",
     description="Retorna os detalhes de uma unidade específica pelo seu ID.",
 )
-def obter_unidade(unidade_id: int, db: Session = Depends(get_db)):
+def obter_unidade(
+    unidade_id: int,
+    current_user: AuthUser = Depends(require_any_user),
+    db: Session = Depends(get_db)
+):
     """
     Retorna os detalhes de uma unidade específica.
 
@@ -79,7 +89,11 @@ def obter_unidade(unidade_id: int, db: Session = Depends(get_db)):
     summary="Listar unidades por subsecional",
     description="Retorna todas as unidades de uma subsecional específica.",
 )
-def listar_unidades_por_subsecional(subsecional_id: int, db: Session = Depends(get_db)):
+def listar_unidades_por_subsecional(
+    subsecional_id: int,
+    current_user: AuthUser = Depends(require_any_user),
+    db: Session = Depends(get_db)
+):
     """
     Lista todas as unidades de uma subsecional.
 
@@ -98,6 +112,7 @@ def listar_unidades_por_subsecional(subsecional_id: int, db: Session = Depends(g
 def atualizar_unidade(
     unidade_id: int,
     unidade: UnidadeUpdate,
+    current_user: AuthUser = Depends(require_any_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -116,7 +131,11 @@ def atualizar_unidade(
     summary="Deletar unidade",
     description="Remove uma unidade do sistema. Esta operação é irreversível.",
 )
-def deletar_unidade(unidade_id: int, db: Session = Depends(get_db)):
+def deletar_unidade(
+    unidade_id: int,
+    current_user: AuthUser = Depends(require_any_user),
+    db: Session = Depends(get_db)
+):
     """
     Deleta uma unidade do sistema.
 

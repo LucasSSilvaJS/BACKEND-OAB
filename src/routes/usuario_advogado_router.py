@@ -2,6 +2,7 @@ from typing import List
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from src.routes.dependencies import get_db
+from src.routes.auth_dependencies import require_any_user, AuthUser
 from src.schemas.usuario_advogado import UsuarioAdvogadoCreate, UsuarioAdvogadoUpdate, UsuarioAdvogadoResponse
 from src.schemas.comum import MensagemResponse
 from src.services.usuario_advogado_service import UsuarioAdvogadoService
@@ -21,7 +22,10 @@ router = APIRouter(
     description="Cria um novo usuário advogado no sistema. O registro OAB deve ser único e o cadastro deve existir.",
     response_description="Usuário advogado criado com sucesso",
 )
-def criar_usuario(usuario: UsuarioAdvogadoCreate, db: Session = Depends(get_db)):
+def criar_usuario(
+    usuario: UsuarioAdvogadoCreate,
+    db: Session = Depends(get_db)
+):
     """
     Cria um novo usuário advogado no sistema.
 
@@ -43,6 +47,7 @@ def criar_usuario(usuario: UsuarioAdvogadoCreate, db: Session = Depends(get_db))
 def listar_usuarios(
     skip: int = 0,
     limit: int = 100,
+    current_user: AuthUser = Depends(require_any_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -61,7 +66,11 @@ def listar_usuarios(
     summary="Obter usuário advogado por ID",
     description="Retorna os detalhes de um usuário advogado específico pelo seu ID.",
 )
-def obter_usuario(usuario_id: int, db: Session = Depends(get_db)):
+def obter_usuario(
+    usuario_id: int,
+    current_user: AuthUser = Depends(require_any_user),
+    db: Session = Depends(get_db)
+):
     """
     Retorna os detalhes de um usuário advogado específico.
 
@@ -98,7 +107,11 @@ def atualizar_usuario(
     summary="Deletar usuário advogado",
     description="Remove um usuário advogado do sistema. Esta operação é irreversível.",
 )
-def deletar_usuario(usuario_id: int, db: Session = Depends(get_db)):
+def deletar_usuario(
+    usuario_id: int,
+    current_user: AuthUser = Depends(require_any_user),
+    db: Session = Depends(get_db)
+):
     """
     Deleta um usuário advogado do sistema.
 

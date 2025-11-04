@@ -2,6 +2,7 @@ from typing import List
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from src.routes.dependencies import get_db
+from src.routes.auth_dependencies import require_any_user, AuthUser
 from src.schemas.cadastro import CadastroCreate, CadastroUpdate, CadastroResponse
 from src.schemas.comum import MensagemResponse
 from src.services.cadastro_service import CadastroService
@@ -45,6 +46,7 @@ def criar_cadastro(cadastro: CadastroCreate, db: Session = Depends(get_db)):
 def listar_cadastros(
     skip: int = 0,
     limit: int = 100,
+    current_user: AuthUser = Depends(require_any_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -63,7 +65,11 @@ def listar_cadastros(
     summary="Obter cadastro por ID",
     description="Retorna os detalhes de um cadastro específico pelo seu ID.",
 )
-def obter_cadastro(cadastro_id: int, db: Session = Depends(get_db)):
+def obter_cadastro(
+    cadastro_id: int,
+    current_user: AuthUser = Depends(require_any_user),
+    db: Session = Depends(get_db)
+):
     """
     Retorna os detalhes de um cadastro específico.
 
@@ -100,7 +106,11 @@ def atualizar_cadastro(
     summary="Deletar cadastro",
     description="Remove um cadastro do sistema. Esta operação é irreversível.",
 )
-def deletar_cadastro(cadastro_id: int, db: Session = Depends(get_db)):
+def deletar_cadastro(
+    cadastro_id: int,
+    current_user: AuthUser = Depends(require_any_user),
+    db: Session = Depends(get_db)
+):
     """
     Deleta um cadastro do sistema.
 

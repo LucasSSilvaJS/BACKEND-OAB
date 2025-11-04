@@ -2,6 +2,7 @@ from typing import List
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from src.routes.dependencies import get_db
+from src.routes.auth_dependencies import require_any_user, AuthUser
 from src.schemas.subsecional import SubsecionalCreate, SubsecionalUpdate, SubsecionalResponse
 from src.schemas.comum import MensagemResponse
 from src.services.subsecional_service import SubsecionalService
@@ -21,7 +22,11 @@ router = APIRouter(
     description="Cria uma nova subsecional no sistema. O nome deve ser único.",
     response_description="Subsecional criada com sucesso",
 )
-def criar_subsecional(subsecional: SubsecionalCreate, db: Session = Depends(get_db)):
+def criar_subsecional(
+    subsecional: SubsecionalCreate,
+    current_user: AuthUser = Depends(require_any_user),
+    db: Session = Depends(get_db)
+):
     """
     Cria uma nova subsecional no sistema.
 
@@ -40,6 +45,7 @@ def criar_subsecional(subsecional: SubsecionalCreate, db: Session = Depends(get_
 def listar_subsecionais(
     skip: int = 0,
     limit: int = 100,
+    current_user: AuthUser = Depends(require_any_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -58,7 +64,11 @@ def listar_subsecionais(
     summary="Obter subsecional por ID",
     description="Retorna os detalhes de uma subsecional específica pelo seu ID.",
 )
-def obter_subsecional(subsecional_id: int, db: Session = Depends(get_db)):
+def obter_subsecional(
+    subsecional_id: int,
+    current_user: AuthUser = Depends(require_any_user),
+    db: Session = Depends(get_db)
+):
     """
     Retorna os detalhes de uma subsecional específica.
 
@@ -77,6 +87,7 @@ def obter_subsecional(subsecional_id: int, db: Session = Depends(get_db)):
 def atualizar_subsecional(
     subsecional_id: int,
     subsecional: SubsecionalUpdate,
+    current_user: AuthUser = Depends(require_any_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -95,7 +106,11 @@ def atualizar_subsecional(
     summary="Deletar subsecional",
     description="Remove uma subsecional do sistema. Esta operação é irreversível.",
 )
-def deletar_subsecional(subsecional_id: int, db: Session = Depends(get_db)):
+def deletar_subsecional(
+    subsecional_id: int,
+    current_user: AuthUser = Depends(require_any_user),
+    db: Session = Depends(get_db)
+):
     """
     Deleta uma subsecional do sistema.
 

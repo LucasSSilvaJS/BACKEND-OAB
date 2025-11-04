@@ -13,7 +13,10 @@ from src.routes import (
     unidade_router,
     subsecional_router,
     usuario_advogado_router,
+    analista_ti_router,
+    administrador_sala_router,
 )
+from src.routes.auth_router import router as auth_router
 
 # Importar todas as entities para garantir que as tabelas sejam criadas
 from src.entities import (
@@ -85,6 +88,7 @@ app.add_middleware(
 )
 
 # Incluir todos os routers
+app.include_router(auth_router, prefix="/api/v1")
 app.include_router(cadastro_router, prefix="/api/v1")
 app.include_router(sessao_router, prefix="/api/v1")
 app.include_router(computador_router, prefix="/api/v1")
@@ -92,6 +96,8 @@ app.include_router(sala_coworking_router, prefix="/api/v1")
 app.include_router(unidade_router, prefix="/api/v1")
 app.include_router(subsecional_router, prefix="/api/v1")
 app.include_router(usuario_advogado_router, prefix="/api/v1")
+app.include_router(analista_ti_router, prefix="/api/v1")
+app.include_router(administrador_sala_router, prefix="/api/v1")
 
 
 @app.get(
