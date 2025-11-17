@@ -3,10 +3,7 @@ import hashlib
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
-from passlib.context import CryptContext
-
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+import bcrypt
 
 # Configurações JWT
 SECRET_KEY = os.getenv("SECRET_KEY", "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7")
@@ -30,18 +27,40 @@ def hash_password(password: str) -> str:
     Hasheia uma senha usando SHA-256 + bcrypt.
     Isso garante compatibilidade com senhas de qualquer tamanho,
     já que bcrypt tem limite de 72 bytes.
+    
+    Args:
+        password: Senha em texto plano
+    
+    Returns:
+        Hash bcrypt da senha pré-processada com SHA-256
     """
     preprocessed = _preprocess_password(password)
-    return pwd_context.hash(preprocessed)
+    # Aplica bcrypt diretamente, usando salt gerado automaticamente
+    password_bytes = preprocessed.encode('utf-8')
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password_bytes, salt)
+    return hashed.decode('utf-8')
 
 
 def verify_password(plain: str, hashed: str) -> bool:
     """
     Verifica se uma senha em texto plano corresponde ao hash.
     Aplica o mesmo pré-processamento (SHA-256) antes da verificação.
+    
+    Args:
+        plain: Senha em texto plano
+        hashed: Hash bcrypt da senha
+    
+    Returns:
+        True se a senha corresponde ao hash, False caso contrário
     """
-    preprocessed = _preprocess_password(plain)
-    return pwd_context.verify(preprocessed, hashed)
+    try:
+        preprocessed = _preprocess_password(plain)
+        password_bytes = preprocessed.encode('utf-8')
+        hashed_bytes = hashed.encode('utf-8')
+        return bcrypt.checkpw(password_bytes, hashed_bytes)
+    except Exception:
+        return False
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
