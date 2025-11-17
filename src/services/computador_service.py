@@ -2,12 +2,14 @@ from typing import Optional, List
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from src.repositories.computador_repository import ComputadorRepository
+from src.repositories.sala_coworking_repository import SalaCoworkingRepository
 from src.schemas.computador import ComputadorCreate, ComputadorUpdate, ComputadorResponse
 
 
 class ComputadorService:
     def __init__(self, db: Session):
         self.repository = ComputadorRepository(db)
+        self.sala_repo = SalaCoworkingRepository(db)
 
     def criar_computador(self, computador: ComputadorCreate) -> ComputadorResponse:
         # Verificar se IP já existe
@@ -23,6 +25,14 @@ class ComputadorService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Número de tombamento já cadastrado"
             )
+        
+        # Validar sala de coworking se fornecida
+        if computador.coworking_id is not None:
+            if not self.sala_repo.get_by_id(computador.coworking_id):
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Sala de coworking não encontrada"
+                )
         
         computador_dict = computador.model_dump()
         db_computador = self.repository.create(computador_dict)
@@ -67,6 +77,14 @@ class ComputadorService:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Número de tombamento já cadastrado"
+                )
+        
+        # Validar sala de coworking se fornecida
+        if computador.coworking_id is not None and computador.coworking_id != db_computador.coworking_id:
+            if not self.sala_repo.get_by_id(computador.coworking_id):
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Sala de coworking não encontrada"
                 )
         
         update_dict = computador.model_dump(exclude_unset=True)
