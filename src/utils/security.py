@@ -1,4 +1,5 @@
 import os
+import hashlib
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
@@ -13,12 +14,34 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 horas
 
 
+def _preprocess_password(password: str) -> str:
+    """
+    Preprocessa a senha antes de passar para bcrypt.
+    Bcrypt tem limite de 72 bytes, então aplicamos SHA-256 primeiro
+    para garantir que sempre teremos 64 bytes (32 bytes em hex).
+    """
+    password_bytes = password.encode('utf-8')
+    sha256_hash = hashlib.sha256(password_bytes).hexdigest()
+    return sha256_hash
+
+
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    """
+    Hasheia uma senha usando SHA-256 + bcrypt.
+    Isso garante compatibilidade com senhas de qualquer tamanho,
+    já que bcrypt tem limite de 72 bytes.
+    """
+    preprocessed = _preprocess_password(password)
+    return pwd_context.hash(preprocessed)
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    """
+    Verifica se uma senha em texto plano corresponde ao hash.
+    Aplica o mesmo pré-processamento (SHA-256) antes da verificação.
+    """
+    preprocessed = _preprocess_password(plain)
+    return pwd_context.verify(preprocessed, hashed)
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
