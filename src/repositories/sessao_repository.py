@@ -65,6 +65,12 @@ class SessaoRepository(BaseRepository[Sessao]):
         self.db.refresh(sessao)
         return sessao
 
+    def desativar_sessao(self, sessao: Sessao) -> Sessao:
+        sessao.ativado = False
+        self.db.commit()
+        self.db.refresh(sessao)
+        return sessao
+
     def delete(self, db_obj: Sessao) -> bool:
         return super().delete(db_obj)
 

@@ -185,6 +185,26 @@ def finalizar_sessao(
     return service.finalizar_sessao(sessao_id)
 
 
+@router.post(
+    "/{sessao_id}/desativar",
+    response_model=SessaoResponse,
+    summary="Desativar sessão",
+    description="Desativa uma sessão ativa, alterando apenas o atributo ativado para false.",
+)
+def desativar_sessao(
+    sessao_id: int,
+    current_user: AuthUser = Depends(require_any_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Desativa uma sessão ativa.
+
+    - **sessao_id**: ID único da sessão a ser desativada
+    """
+    service = SessaoService(db)
+    return service.desativar_sessao(sessao_id)
+
+
 @router.delete(
     "/{sessao_id}",
     response_model=MensagemResponse,

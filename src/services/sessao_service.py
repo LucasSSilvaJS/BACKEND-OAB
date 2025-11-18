@@ -123,6 +123,23 @@ class SessaoService:
         finalizada = self.repository.finalizar_sessao(db_sessao, datetime.now())
         return SessaoResponse.model_validate(finalizada)
 
+    def desativar_sessao(self, sessao_id: int) -> SessaoResponse:
+        db_sessao = self.repository.get_by_id(sessao_id)
+        if not db_sessao:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Sessão não encontrada"
+            )
+        
+        if not db_sessao.ativado:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Sessão já está desativada"
+            )
+        
+        desativada = self.repository.desativar_sessao(db_sessao)
+        return SessaoResponse.model_validate(desativada)
+
     def deletar_sessao(self, sessao_id: int) -> bool:
         db_sessao = self.repository.get_by_id(sessao_id)
         if not db_sessao:
