@@ -120,7 +120,7 @@ class SessaoService:
                 detail="Sessão já foi finalizada"
             )
         
-        finalizada = self.repository.finalizar_sessao(sessao_id, datetime.now())
+        finalizada = self.repository.finalizar_sessao(db_sessao, datetime.now())
         return SessaoResponse.model_validate(finalizada)
 
     def deletar_sessao(self, sessao_id: int) -> bool:

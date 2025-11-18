@@ -58,13 +58,11 @@ class SessaoRepository(BaseRepository[Sessao]):
         self.db.refresh(db_obj)
         return db_obj
 
-    def finalizar_sessao(self, sessao_id: int, final_de_sessao: datetime) -> Optional[Sessao]:
-        sessao = self.get_by_id(sessao_id)
-        if sessao:
-            sessao.final_de_sessao = final_de_sessao
-            sessao.ativado = False
-            self.db.commit()
-            self.db.refresh(sessao)
+    def finalizar_sessao(self, sessao: Sessao, final_de_sessao: datetime) -> Sessao:
+        sessao.final_de_sessao = final_de_sessao
+        sessao.ativado = False
+        self.db.commit()
+        self.db.refresh(sessao)
         return sessao
 
     def delete(self, db_obj: Sessao) -> bool:
