@@ -1,6 +1,6 @@
 from typing import Optional, List
 from datetime import date, datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, computed_field
 
 
 class SessaoBase(BaseModel):
@@ -28,8 +28,35 @@ class SessaoUpdate(BaseModel):
     analista_ids: Optional[List[int]] = None
 
 
+class SubsecionalInfo(BaseModel):
+    subsecional_id: int
+    nome: str
+
+    class Config:
+        from_attributes = True
+
+
+class UnidadeInfo(BaseModel):
+    unidade_id: int
+    nome: str
+
+    class Config:
+        from_attributes = True
+
+
+class SalaCoworkingInfo(BaseModel):
+    coworking_id: int
+    nome_da_sala: str
+
+    class Config:
+        from_attributes = True
+
+
 class SessaoResponse(SessaoBase):
     sessao_id: int
+    sala_coworking: Optional[SalaCoworkingInfo] = None
+    unidade: Optional[UnidadeInfo] = None
+    subsecional: Optional[SubsecionalInfo] = None
 
     class Config:
         from_attributes = True

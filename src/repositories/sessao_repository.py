@@ -1,6 +1,6 @@
 from typing import Optional, List
 from datetime import date, datetime
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from src.entities.sessao import Sessao
 from src.entities.analista_de_ti import Analista_de_ti
 from src.repositories.base_repository import BaseRepository
@@ -11,13 +11,22 @@ class SessaoRepository(BaseRepository[Sessao]):
         super().__init__(Sessao, db)
 
     def get_by_id(self, sessao_id: int) -> Optional[Sessao]:
-        return self.db.query(Sessao).filter(Sessao.sessao_id == sessao_id).first()
+        return self.db.query(Sessao).options(
+            joinedload(Sessao.computador).joinedload('sala').joinedload('subsecional'),
+            joinedload(Sessao.computador).joinedload('sala').joinedload('unidade')
+        ).filter(Sessao.sessao_id == sessao_id).first()
 
     def get_all(self, skip: int = 0, limit: int = 100) -> List[Sessao]:
-        return self.db.query(Sessao).offset(skip).limit(limit).all()
+        return self.db.query(Sessao).options(
+            joinedload(Sessao.computador).joinedload('sala').joinedload('subsecional'),
+            joinedload(Sessao.computador).joinedload('sala').joinedload('unidade')
+        ).offset(skip).limit(limit).all()
 
     def get_by_usuario(self, usuario_id: int) -> List[Sessao]:
-        return self.db.query(Sessao).filter(Sessao.usuario_id == usuario_id).all()
+        return self.db.query(Sessao).options(
+            joinedload(Sessao.computador).joinedload('sala').joinedload('subsecional'),
+            joinedload(Sessao.computador).joinedload('sala').joinedload('unidade')
+        ).filter(Sessao.usuario_id == usuario_id).all()
 
     def get_by_computador(self, computador_id: int) -> Optional[Sessao]:
         return self.db.query(Sessao).filter(Sessao.computador_id == computador_id).first()
@@ -26,13 +35,22 @@ class SessaoRepository(BaseRepository[Sessao]):
         return self.db.query(Sessao).filter(Sessao.administrador_id == administrador_id).all()
 
     def get_by_administrador_paginado(self, administrador_id: int, skip: int = 0, limit: int = 100) -> List[Sessao]:
-        return self.db.query(Sessao).filter(Sessao.administrador_id == administrador_id).offset(skip).limit(limit).all()
+        return self.db.query(Sessao).options(
+            joinedload(Sessao.computador).joinedload('sala').joinedload('subsecional'),
+            joinedload(Sessao.computador).joinedload('sala').joinedload('unidade')
+        ).filter(Sessao.administrador_id == administrador_id).offset(skip).limit(limit).all()
 
     def get_ativas(self) -> List[Sessao]:
-        return self.db.query(Sessao).filter(Sessao.ativado == True).all()
+        return self.db.query(Sessao).options(
+            joinedload(Sessao.computador).joinedload('sala').joinedload('subsecional'),
+            joinedload(Sessao.computador).joinedload('sala').joinedload('unidade')
+        ).filter(Sessao.ativado == True).all()
 
     def get_por_data(self, data: date) -> List[Sessao]:
-        return self.db.query(Sessao).filter(Sessao.data == data).all()
+        return self.db.query(Sessao).options(
+            joinedload(Sessao.computador).joinedload('sala').joinedload('subsecional'),
+            joinedload(Sessao.computador).joinedload('sala').joinedload('unidade')
+        ).filter(Sessao.data == data).all()
 
     def create(self, obj_in: dict, analista_ids: Optional[List[int]] = None) -> Sessao:
         db_obj = Sessao(**obj_in)

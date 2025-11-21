@@ -48,7 +48,9 @@ class SessaoService:
         
         sessao_dict = sessao.model_dump(exclude={"analista_ids"})
         db_sessao = self.repository.create(sessao_dict, analista_ids=sessao.analista_ids)
-        return SessaoResponse.model_validate(db_sessao)
+        # Recarregar a sessão com as relações
+        db_sessao = self.repository.get_by_id(db_sessao.sessao_id)
+        return self._sessao_to_response(db_sessao)
 
     def obter_sessao(self, sessao_id: int) -> SessaoResponse:
         db_sessao = self.repository.get_by_id(sessao_id)
@@ -57,26 +59,64 @@ class SessaoService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Sessão não encontrada"
             )
-        return SessaoResponse.model_validate(db_sessao)
+        return self._sessao_to_response(db_sessao)
+
+    def _sessao_to_response(self, sessao) -> SessaoResponse:
+        """Converte uma sessão em SessaoResponse com informações relacionadas."""
+        response_dict = {
+            "sessao_id": sessao.sessao_id,
+            "data": sessao.data,
+            "inicio_de_sessao": sessao.inicio_de_sessao,
+            "final_de_sessao": sessao.final_de_sessao,
+            "ativado": sessao.ativado,
+            "computador_id": sessao.computador_id,
+            "usuario_id": sessao.usuario_id,
+            "administrador_id": sessao.administrador_id,
+            "sala_coworking": None,
+            "unidade": None,
+            "subsecional": None
+        }
+        
+        # Adicionar informações da sala, unidade e subseccional se disponíveis
+        if sessao.computador and sessao.computador.sala:
+            sala = sessao.computador.sala
+            response_dict["sala_coworking"] = {
+                "coworking_id": sala.coworking_id,
+                "nome_da_sala": sala.nome_da_sala
+            }
+            
+            if sala.unidade:
+                response_dict["unidade"] = {
+                    "unidade_id": sala.unidade.unidade_id,
+                    "nome": sala.unidade.nome
+                }
+            
+            if sala.subsecional:
+                response_dict["subsecional"] = {
+                    "subsecional_id": sala.subsecional.subsecional_id,
+                    "nome": sala.subsecional.nome
+                }
+        
+        return SessaoResponse.model_validate(response_dict)
 
     def listar_sessoes(self, skip: int = 0, limit: int = 100, administrador_id: Optional[int] = None) -> List[SessaoResponse]:
         if administrador_id is not None:
             sessoes = self.repository.get_by_administrador_paginado(administrador_id, skip=skip, limit=limit)
         else:
             sessoes = self.repository.get_all(skip=skip, limit=limit)
-        return [SessaoResponse.model_validate(s) for s in sessoes]
+        return [self._sessao_to_response(s) for s in sessoes]
 
     def listar_sessoes_ativas(self) -> List[SessaoResponse]:
         sessoes = self.repository.get_ativas()
-        return [SessaoResponse.model_validate(s) for s in sessoes]
+        return [self._sessao_to_response(s) for s in sessoes]
 
     def listar_sessoes_por_usuario(self, usuario_id: int) -> List[SessaoResponse]:
         sessoes = self.repository.get_by_usuario(usuario_id)
-        return [SessaoResponse.model_validate(s) for s in sessoes]
+        return [self._sessao_to_response(s) for s in sessoes]
 
     def listar_sessoes_por_data(self, data: date) -> List[SessaoResponse]:
         sessoes = self.repository.get_por_data(data)
-        return [SessaoResponse.model_validate(s) for s in sessoes]
+        return [self._sessao_to_response(s) for s in sessoes]
 
     def atualizar_sessao(self, sessao_id: int, sessao: SessaoUpdate) -> SessaoResponse:
         db_sessao = self.repository.get_by_id(sessao_id)
@@ -107,7 +147,9 @@ class SessaoService:
             update_dict, 
             analista_ids=sessao.analista_ids
         )
-        return SessaoResponse.model_validate(updated_sessao)
+        # Recarregar a sessão com as relações
+        updated_sessao = self.repository.get_by_id(updated_sessao.sessao_id)
+        return self._sessao_to_response(updated_sessao)
 
     def finalizar_sessao(self, sessao_id: int) -> SessaoResponse:
         db_sessao = self.repository.get_by_id(sessao_id)
@@ -124,7 +166,9 @@ class SessaoService:
             )
         
         finalizada = self.repository.finalizar_sessao(db_sessao, datetime.now())
-        return SessaoResponse.model_validate(finalizada)
+        # Recarregar a sessão com as relações
+        finalizada = self.repository.get_by_id(finalizada.sessao_id)
+        return self._sessao_to_response(finalizada)
 
     def desativar_sessao(self, sessao_id: int) -> SessaoResponse:
         db_sessao = self.repository.get_by_id(sessao_id)
@@ -141,7 +185,9 @@ class SessaoService:
             )
         
         desativada = self.repository.desativar_sessao(db_sessao)
-        return SessaoResponse.model_validate(desativada)
+        # Recarregar a sessão com as relações
+        desativada = self.repository.get_by_id(desativada.sessao_id)
+        return self._sessao_to_response(desativada)
 
     def deletar_sessao(self, sessao_id: int) -> bool:
         db_sessao = self.repository.get_by_id(sessao_id)
