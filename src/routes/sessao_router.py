@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from datetime import date
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
@@ -48,22 +48,24 @@ def criar_sessao(
     "",
     response_model=List[SessaoResponse],
     summary="Listar sessões",
-    description="Retorna uma lista paginada de todas as sessões cadastradas.",
+    description="Retorna uma lista paginada de todas as sessões cadastradas, com filtro opcional por administrador.",
 )
 def listar_sessoes(
     skip: int = 0,
     limit: int = 100,
+    administrador_id: Optional[int] = None,
     current_user: AuthUser = Depends(require_any_user),
     db: Session = Depends(get_db)
 ):
     """
-    Lista todas as sessões com paginação.
+    Lista todas as sessões com paginação e filtro opcional por administrador.
 
     - **skip**: Número de registros a pular (para paginação)
     - **limit**: Número máximo de registros a retornar (padrão: 100)
+    - **administrador_id**: ID do administrador para filtrar as sessões (opcional)
     """
     service = SessaoService(db)
-    return service.listar_sessoes(skip=skip, limit=limit)
+    return service.listar_sessoes(skip=skip, limit=limit, administrador_id=administrador_id)
 
 
 @router.get(

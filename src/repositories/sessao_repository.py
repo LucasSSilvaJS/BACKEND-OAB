@@ -25,6 +25,9 @@ class SessaoRepository(BaseRepository[Sessao]):
     def get_by_administrador(self, administrador_id: int) -> List[Sessao]:
         return self.db.query(Sessao).filter(Sessao.administrador_id == administrador_id).all()
 
+    def get_by_administrador_paginado(self, administrador_id: int, skip: int = 0, limit: int = 100) -> List[Sessao]:
+        return self.db.query(Sessao).filter(Sessao.administrador_id == administrador_id).offset(skip).limit(limit).all()
+
     def get_ativas(self) -> List[Sessao]:
         return self.db.query(Sessao).filter(Sessao.ativado == True).all()
 
