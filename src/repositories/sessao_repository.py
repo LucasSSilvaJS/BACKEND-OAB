@@ -3,6 +3,10 @@ from datetime import date, datetime
 from sqlalchemy.orm import Session, joinedload
 from src.entities.sessao import Sessao
 from src.entities.analista_de_ti import Analista_de_ti
+from src.entities.computador import Computador
+from src.entities.sala_coworking import Sala_coworking
+from src.entities.subsecional import Subsecional
+from src.entities.unidade import Unidade
 from src.repositories.base_repository import BaseRepository
 
 
@@ -12,20 +16,20 @@ class SessaoRepository(BaseRepository[Sessao]):
 
     def get_by_id(self, sessao_id: int) -> Optional[Sessao]:
         return self.db.query(Sessao).options(
-            joinedload(Sessao.computador).joinedload('sala').joinedload('subsecional'),
-            joinedload(Sessao.computador).joinedload('sala').joinedload('unidade')
+            joinedload(Sessao.computador).joinedload(Computador.sala).joinedload(Sala_coworking.subsecional),
+            joinedload(Sessao.computador).joinedload(Computador.sala).joinedload(Sala_coworking.unidade)
         ).filter(Sessao.sessao_id == sessao_id).first()
 
     def get_all(self, skip: int = 0, limit: int = 100) -> List[Sessao]:
         return self.db.query(Sessao).options(
-            joinedload(Sessao.computador).joinedload('sala').joinedload('subsecional'),
-            joinedload(Sessao.computador).joinedload('sala').joinedload('unidade')
+            joinedload(Sessao.computador).joinedload(Computador.sala).joinedload(Sala_coworking.subsecional),
+            joinedload(Sessao.computador).joinedload(Computador.sala).joinedload(Sala_coworking.unidade)
         ).offset(skip).limit(limit).all()
 
     def get_by_usuario(self, usuario_id: int) -> List[Sessao]:
         return self.db.query(Sessao).options(
-            joinedload(Sessao.computador).joinedload('sala').joinedload('subsecional'),
-            joinedload(Sessao.computador).joinedload('sala').joinedload('unidade')
+            joinedload(Sessao.computador).joinedload(Computador.sala).joinedload(Sala_coworking.subsecional),
+            joinedload(Sessao.computador).joinedload(Computador.sala).joinedload(Sala_coworking.unidade)
         ).filter(Sessao.usuario_id == usuario_id).all()
 
     def get_by_computador(self, computador_id: int) -> Optional[Sessao]:
@@ -36,20 +40,20 @@ class SessaoRepository(BaseRepository[Sessao]):
 
     def get_by_administrador_paginado(self, administrador_id: int, skip: int = 0, limit: int = 100) -> List[Sessao]:
         return self.db.query(Sessao).options(
-            joinedload(Sessao.computador).joinedload('sala').joinedload('subsecional'),
-            joinedload(Sessao.computador).joinedload('sala').joinedload('unidade')
+            joinedload(Sessao.computador).joinedload(Computador.sala).joinedload(Sala_coworking.subsecional),
+            joinedload(Sessao.computador).joinedload(Computador.sala).joinedload(Sala_coworking.unidade)
         ).filter(Sessao.administrador_id == administrador_id).offset(skip).limit(limit).all()
 
     def get_ativas(self) -> List[Sessao]:
         return self.db.query(Sessao).options(
-            joinedload(Sessao.computador).joinedload('sala').joinedload('subsecional'),
-            joinedload(Sessao.computador).joinedload('sala').joinedload('unidade')
+            joinedload(Sessao.computador).joinedload(Computador.sala).joinedload(Sala_coworking.subsecional),
+            joinedload(Sessao.computador).joinedload(Computador.sala).joinedload(Sala_coworking.unidade)
         ).filter(Sessao.ativado == True).all()
 
     def get_por_data(self, data: date) -> List[Sessao]:
         return self.db.query(Sessao).options(
-            joinedload(Sessao.computador).joinedload('sala').joinedload('subsecional'),
-            joinedload(Sessao.computador).joinedload('sala').joinedload('unidade')
+            joinedload(Sessao.computador).joinedload(Computador.sala).joinedload(Sala_coworking.subsecional),
+            joinedload(Sessao.computador).joinedload(Computador.sala).joinedload(Sala_coworking.unidade)
         ).filter(Sessao.data == data).all()
 
     def create(self, obj_in: dict, analista_ids: Optional[List[int]] = None) -> Sessao:
