@@ -90,8 +90,16 @@ class SessaoService:
                     "unidade_id": sala.unidade.unidade_id,
                     "nome": sala.unidade.nome
                 }
+                
+                # Tentar buscar subseccional através da unidade
+                if sala.unidade.subsecional:
+                    response_dict["subsecional"] = {
+                        "subsecional_id": sala.unidade.subsecional.subsecional_id,
+                        "nome": sala.unidade.subsecional.nome
+                    }
             
-            if sala.subsecional:
+            # Se não achou pela unidade, tentar direto pela sala
+            if not response_dict["subsecional"] and sala.subsecional:
                 response_dict["subsecional"] = {
                     "subsecional_id": sala.subsecional.subsecional_id,
                     "nome": sala.subsecional.nome
