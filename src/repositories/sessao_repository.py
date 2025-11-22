@@ -65,13 +65,6 @@ class SessaoRepository(BaseRepository[Sessao]):
         # Inicializar query base
         query = self.db.query(Sessao)
         
-        # Verificar se precisa fazer join com Computador (para filtro de IP)
-        precisa_join_computador = filtros.ip_computador is not None and filtros.ip_computador.strip() != ""
-        
-        # Fazer join com Computador se necessário
-        if precisa_join_computador:
-            query = query.join(Computador, Sessao.computador_id == Computador.computador_id)
-        
         # Aplicar filtros
         filtros_aplicados = []
         
@@ -83,11 +76,12 @@ class SessaoRepository(BaseRepository[Sessao]):
         if filtros.datetime_inicio is not None:
             filtros_aplicados.append(Sessao.inicio_de_sessao >= filtros.datetime_inicio)
         
-        # Filtro por IP do computador (busca parcial) - join já foi feito acima
-        if precisa_join_computador:
-            filtros_aplicados.append(
-                Computador.ip_da_maquina.ilike(f"%{filtros.ip_computador.strip()}%")
-            )
+        # Filtro por IP do computador (busca parcial)
+        if filtros.ip_computador and filtros.ip_computador.strip():
+            ip_busca = f"%{filtros.ip_computador.strip()}%"
+            # Fazer join com Computador e aplicar filtro
+            query = query.join(Computador, Sessao.computador_id == Computador.computador_id)
+            filtros_aplicados.append(Computador.ip_da_maquina.ilike(ip_busca))
         
         # Filtro por sessões ativas
         if filtros.apenas_ativas is not None:
@@ -112,6 +106,10 @@ class SessaoRepository(BaseRepository[Sessao]):
         if filtros_aplicados:
             query = query.filter(and_(*filtros_aplicados))
         
+        # Usar distinct() se filtramos por IP (fizemos join) para evitar duplicatas
+        if filtros.ip_computador and filtros.ip_computador.strip():
+            query = query.distinct()
+        
         # Ordenação
         if filtros.ordenar_por_data == OrdenacaoData.MAIS_RECENTE_PRIMEIRO:
             # Mais recente primeiro (DESC)
@@ -122,10 +120,6 @@ class SessaoRepository(BaseRepository[Sessao]):
         
         # Paginação
         query = query.offset(filtros.skip).limit(filtros.limit)
-        
-        # Usar distinct() se fizemos join para evitar duplicatas
-        if precisa_join_computador:
-            query = query.distinct()
         
         # Carregar relacionamentos necessários com joinedload (para evitar N+1 queries)
         query = query.options(
