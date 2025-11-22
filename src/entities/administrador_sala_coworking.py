@@ -1,10 +1,15 @@
+import os
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
 from sqlalchemy.orm import relationship
 from src.database.base import Base
 
+# Schema padrão: middleware_oab
+SCHEMA_NAME = os.getenv("DB_SCHEMA", "middleware_oab")
+
 
 class Administrador_sala_coworking(Base):
     __tablename__ = "Administrador_sala_coworking"
+    __table_args__ = {"schema": SCHEMA_NAME}
 
 
     admin_id = Column(Integer, primary_key=True, autoincrement=True)

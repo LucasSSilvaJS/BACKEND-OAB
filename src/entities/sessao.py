@@ -1,10 +1,15 @@
+import os
 from sqlalchemy import Column, Integer, Date, DateTime, Boolean, ForeignKey
 from sqlalchemy.orm import relationship
 from src.database.base import Base
 
+# Schema padrão: middleware_oab
+SCHEMA_NAME = os.getenv("DB_SCHEMA", "middleware_oab")
+
 
 class Sessao(Base):
     __tablename__ = "Sessao"
+    __table_args__ = {"schema": SCHEMA_NAME}
 
 
     sessao_id = Column(Integer, primary_key=True, autoincrement=True)
