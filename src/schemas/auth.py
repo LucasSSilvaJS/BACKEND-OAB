@@ -28,4 +28,6 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
     tipo_usuario: TipoUsuario
     usuario_id: int
+    cadastro_id: int
+    nome: str
 

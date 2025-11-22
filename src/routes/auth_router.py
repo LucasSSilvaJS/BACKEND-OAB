@@ -69,7 +69,9 @@ async def login_advogado(
         access_token=access_token,
         token_type="bearer",
         tipo_usuario=TipoUsuario.ADVOGADO,
-        usuario_id=usuario.usuario_id
+        usuario_id=usuario.usuario_id,
+        cadastro_id=usuario.cadastro_id,
+        nome=usuario.cadastro.nome
     )
 
 
@@ -119,7 +121,9 @@ async def login_administrador(
         access_token=access_token,
         token_type="bearer",
         tipo_usuario=TipoUsuario.ADMINISTRADOR,
-        usuario_id=administrador.admin_id
+        usuario_id=administrador.admin_id,
+        cadastro_id=administrador.cadastro_id,
+        nome=administrador.cadastro.nome
     )
 
 
@@ -169,6 +173,8 @@ async def login_analista(
         access_token=access_token,
         token_type="bearer",
         tipo_usuario=TipoUsuario.ANALISTA,
-        usuario_id=analista.analista_id
+        usuario_id=analista.analista_id,
+        cadastro_id=analista.cadastro_id,
+        nome=analista.cadastro.nome
     )
 

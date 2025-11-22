@@ -1,5 +1,5 @@
 from typing import Optional, List
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from src.entities.usuario_advogado import Usuario_advogado
 from src.repositories.base_repository import BaseRepository
 
@@ -14,7 +14,9 @@ class UsuarioAdvogadoRepository(BaseRepository[Usuario_advogado]):
         ).first()
 
     def get_by_registro_oab(self, registro_oab: str) -> Optional[Usuario_advogado]:
-        return self.db.query(Usuario_advogado).filter(
+        return self.db.query(Usuario_advogado).options(
+            joinedload(Usuario_advogado.cadastro)
+        ).filter(
             Usuario_advogado.registro_oab == registro_oab
         ).first()
 
