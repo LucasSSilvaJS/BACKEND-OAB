@@ -20,34 +20,49 @@ class DashboardRepository:
         ).first()
         return sala is not None
 
-    def contar_sessoes_ativas(self, coworking_id: int) -> int:
+    def contar_sessoes_ativas(self, coworking_id: int, ano: Optional[int] = None) -> int:
         """Conta o número de sessões ativas na sala coworking"""
-        return self.db.query(Sessao).join(
+        query = self.db.query(Sessao).join(
             Computador, Sessao.computador_id == Computador.computador_id
         ).filter(
             Computador.coworking_id == coworking_id,
             Sessao.ativado == True,
             Sessao.final_de_sessao.is_(None)
-        ).count()
+        )
+        
+        if ano is not None:
+            query = query.filter(extract('year', Sessao.data) == ano)
+        
+        return query.count()
 
-    def contar_total_sessoes(self, coworking_id: int) -> int:
+    def contar_total_sessoes(self, coworking_id: int, ano: Optional[int] = None) -> int:
         """Conta o total de sessões na sala coworking"""
-        return self.db.query(Sessao).join(
+        query = self.db.query(Sessao).join(
             Computador, Sessao.computador_id == Computador.computador_id
         ).filter(
             Computador.coworking_id == coworking_id
-        ).count()
+        )
+        
+        if ano is not None:
+            query = query.filter(extract('year', Sessao.data) == ano)
+        
+        return query.count()
 
-    def obter_pico_acesso(self, coworking_id: int) -> Optional[Tuple[datetime, int]]:
+    def obter_pico_acesso(self, coworking_id: int, ano: Optional[int] = None) -> Optional[Tuple[datetime, int]]:
         """Obtém o horário de pico de acesso (dia/hora com mais sessões iniciadas)"""
-        resultado = self.db.query(
+        query = self.db.query(
             func.date_trunc('hour', Sessao.inicio_de_sessao).label('hora'),
             func.count(Sessao.sessao_id).label('quantidade')
         ).join(
             Computador, Sessao.computador_id == Computador.computador_id
         ).filter(
             Computador.coworking_id == coworking_id
-        ).group_by(
+        )
+        
+        if ano is not None:
+            query = query.filter(extract('year', Sessao.data) == ano)
+        
+        resultado = query.group_by(
             func.date_trunc('hour', Sessao.inicio_de_sessao)
         ).order_by(
             desc('quantidade')
@@ -57,9 +72,9 @@ class DashboardRepository:
             return (resultado.hora, resultado.quantidade)
         return None
 
-    def obter_coworking_mais_utilizado(self, subsecional_id: int, unidade_id: int) -> Optional[Dict]:
+    def obter_coworking_mais_utilizado(self, subsecional_id: int, unidade_id: int, ano: Optional[int] = None) -> Optional[Dict]:
         """Obtém a sala coworking mais utilizada na unidade/subsecional"""
-        resultado = self.db.query(
+        query = self.db.query(
             Sala_coworking.coworking_id,
             Sala_coworking.nome_da_sala,
             func.count(Sessao.sessao_id).label('total_sessoes')
@@ -70,7 +85,12 @@ class DashboardRepository:
         ).filter(
             Sala_coworking.subsecional_id == subsecional_id,
             Sala_coworking.unidade_id == unidade_id
-        ).group_by(
+        )
+        
+        if ano is not None:
+            query = query.filter(extract('year', Sessao.data) == ano)
+        
+        resultado = query.group_by(
             Sala_coworking.coworking_id,
             Sala_coworking.nome_da_sala
         ).order_by(
@@ -85,9 +105,9 @@ class DashboardRepository:
             }
         return None
 
-    def obter_frequencia_mensal(self, coworking_id: int) -> List[Dict]:
-        """Obtém a frequência de uso de computadores por mês nos últimos 12 meses"""
-        resultados = self.db.query(
+    def obter_frequencia_mensal(self, coworking_id: int, ano: Optional[int] = None) -> List[Dict]:
+        """Obtém a frequência de uso de computadores por mês"""
+        query = self.db.query(
             extract('year', Sessao.data).label('ano'),
             extract('month', Sessao.data).label('mes'),
             func.count(Sessao.sessao_id).label('total_sessoes')
@@ -95,7 +115,12 @@ class DashboardRepository:
             Computador, Sessao.computador_id == Computador.computador_id
         ).filter(
             Computador.coworking_id == coworking_id
-        ).group_by(
+        )
+        
+        if ano is not None:
+            query = query.filter(extract('year', Sessao.data) == ano)
+        
+        resultados = query.group_by(
             extract('year', Sessao.data),
             extract('month', Sessao.data)
         ).order_by(

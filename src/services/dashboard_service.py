@@ -70,11 +70,11 @@ class DashboardService:
         self._validar_filtros(filtros)
 
         # Contar sessões ativas
-        sessoes_ativas = self.dashboard_repo.contar_sessoes_ativas(filtros.coworking_id)
-        total_sessoes = self.dashboard_repo.contar_total_sessoes(filtros.coworking_id)
+        sessoes_ativas = self.dashboard_repo.contar_sessoes_ativas(filtros.coworking_id, filtros.ano)
+        total_sessoes = self.dashboard_repo.contar_total_sessoes(filtros.coworking_id, filtros.ano)
 
         # Obter pico de acesso
-        pico_acesso_data = self.dashboard_repo.obter_pico_acesso(filtros.coworking_id)
+        pico_acesso_data = self.dashboard_repo.obter_pico_acesso(filtros.coworking_id, filtros.ano)
         pico_acesso = None
         if pico_acesso_data:
             hora_pico, quantidade = pico_acesso_data
@@ -87,14 +87,15 @@ class DashboardService:
         # Obter coworking mais utilizado (na mesma subsecional/unidade)
         coworking_mais_utilizado_data = self.dashboard_repo.obter_coworking_mais_utilizado(
             filtros.subsecional_id,
-            filtros.unidade_id
+            filtros.unidade_id,
+            filtros.ano
         )
         coworking_mais_utilizado = None
         if coworking_mais_utilizado_data:
             coworking_mais_utilizado = CoworkingMaisUtilizado(**coworking_mais_utilizado_data)
 
         # Obter frequência mensal
-        frequencia_data = self.dashboard_repo.obter_frequencia_mensal(filtros.coworking_id)
+        frequencia_data = self.dashboard_repo.obter_frequencia_mensal(filtros.coworking_id, filtros.ano)
         frequencia_mensal = [
             FrequenciaMensal(
                 mes=self._nome_mes(item['mes']),

@@ -7,6 +7,7 @@ class DashboardFiltros(BaseModel):
     subsecional_id: int = Field(..., description="ID da subseccional (obrigatório)")
     unidade_id: int = Field(..., description="ID da unidade (obrigatório)")
     coworking_id: int = Field(..., description="ID da sala coworking (obrigatório)")
+    ano: Optional[int] = Field(None, description="Ano para filtrar os dados (opcional). Se não informado, retorna dados de todos os anos")
 
 
 class PicoAcesso(BaseModel):
