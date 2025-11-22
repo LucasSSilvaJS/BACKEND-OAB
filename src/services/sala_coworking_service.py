@@ -62,6 +62,10 @@ class SalaCoworkingService:
         salas = self.repository.get_by_unidade(unidade_id)
         return [SalaCoworkingResponse.model_validate(s) for s in salas]
 
+    def listar_salas_por_subsecional_e_unidade(self, subsecional_id: int, unidade_id: int) -> List[SalaCoworkingResponse]:
+        salas = self.repository.get_by_subsecional_e_unidade(subsecional_id, unidade_id)
+        return [SalaCoworkingResponse.model_validate(s) for s in salas]
+
     def atualizar_sala(self, coworking_id: int, sala: SalaCoworkingUpdate) -> SalaCoworkingResponse:
         db_sala = self.repository.get_by_id(coworking_id)
         if not db_sala:

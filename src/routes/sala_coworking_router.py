@@ -1,5 +1,5 @@
-from typing import List
-from fastapi import APIRouter, Depends, status
+from typing import List, Optional
+from fastapi import APIRouter, Depends, status, Query
 from sqlalchemy.orm import Session
 from src.routes.dependencies import get_db
 from src.routes.auth_dependencies import require_any_user, AuthUser
@@ -43,21 +43,40 @@ def criar_sala(
     "",
     response_model=List[SalaCoworkingResponse],
     summary="Listar salas de coworking",
-    description="Retorna uma lista paginada de todas as salas de coworking cadastradas no sistema.",
+    description="Retorna uma lista paginada de todas as salas de coworking cadastradas no sistema, com filtros opcionais por subseccional e unidade.",
 )
 def listar_salas(
     skip: int = 0,
     limit: int = 100,
+    subsecional_id: Optional[int] = Query(None, description="Filtrar por subseccional (opcional)"),
+    unidade_id: Optional[int] = Query(None, description="Filtrar por unidade (opcional)"),
     current_user: AuthUser = Depends(require_any_user),
     db: Session = Depends(get_db)
 ):
     """
-    Lista todas as salas de coworking com paginação.
+    Lista todas as salas de coworking com paginação e filtros opcionais.
 
     - **skip**: Número de registros a pular (para paginação)
     - **limit**: Número máximo de registros a retornar (padrão: 100)
+    - **subsecional_id**: ID da subseccional para filtrar (opcional)
+    - **unidade_id**: ID da unidade para filtrar (opcional)
+    
+    Os filtros podem ser combinados para maior precisão.
     """
     service = SalaCoworkingService(db)
+    
+    # Se ambos os filtros forem fornecidos, usar método específico
+    if subsecional_id is not None and unidade_id is not None:
+        return service.listar_salas_por_subsecional_e_unidade(subsecional_id, unidade_id)
+    
+    # Se apenas unidade_id for fornecido
+    if unidade_id is not None:
+        return service.listar_salas_por_unidade(unidade_id)
+    
+    # Se apenas subsecional_id for fornecido
+    if subsecional_id is not None:
+        return service.listar_salas_por_subsecional(subsecional_id)
+    
     return service.listar_salas(skip=skip, limit=limit)
 
 

@@ -1,5 +1,5 @@
-from typing import List
-from fastapi import APIRouter, Depends, status
+from typing import List, Optional
+from fastapi import APIRouter, Depends, status, Query
 from sqlalchemy.orm import Session
 from src.routes.dependencies import get_db
 from src.routes.auth_dependencies import require_any_user, AuthUser
@@ -45,21 +45,28 @@ def criar_unidade(
     "",
     response_model=List[UnidadeResponse],
     summary="Listar unidades",
-    description="Retorna uma lista paginada de todas as unidades cadastradas no sistema.",
+    description="Retorna uma lista paginada de todas as unidades cadastradas no sistema, com filtro opcional por subseccional.",
 )
 def listar_unidades(
     skip: int = 0,
     limit: int = 100,
+    subsecional_id: Optional[int] = Query(None, description="Filtrar por subseccional (opcional)"),
     current_user: AuthUser = Depends(require_any_user),
     db: Session = Depends(get_db)
 ):
     """
-    Lista todas as unidades com paginação.
+    Lista todas as unidades com paginação e filtro opcional.
 
     - **skip**: Número de registros a pular (para paginação)
     - **limit**: Número máximo de registros a retornar (padrão: 100)
+    - **subsecional_id**: ID da subseccional para filtrar (opcional)
     """
     service = UnidadeService(db)
+    
+    # Se subsecional_id for fornecido, filtrar por subseccional
+    if subsecional_id is not None:
+        return service.listar_unidades_por_subsecional(subsecional_id)
+    
     return service.listar_unidades(skip=skip, limit=limit)
 
 

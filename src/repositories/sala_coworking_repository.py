@@ -23,6 +23,12 @@ class SalaCoworkingRepository(BaseRepository[Sala_coworking]):
             Sala_coworking.unidade_id == unidade_id
         ).all()
 
+    def get_by_subsecional_e_unidade(self, subsecional_id: int, unidade_id: int) -> List[Sala_coworking]:
+        return self.db.query(Sala_coworking).filter(
+            Sala_coworking.subsecional_id == subsecional_id,
+            Sala_coworking.unidade_id == unidade_id
+        ).all()
+
     def get_by_administrador(self, administrador_id: int) -> List[Sala_coworking]:
         return self.db.query(Sala_coworking).filter(
             Sala_coworking.administrador_id == administrador_id
