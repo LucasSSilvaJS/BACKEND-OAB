@@ -65,9 +65,6 @@ class SessaoRepository(BaseRepository[Sessao]):
         # Inicializar query base
         query = self.db.query(Sessao)
         
-        # Flags para controlar joins necessários (evitar duplicatas)
-        ja_fez_join_computador = False
-        
         # Aplicar filtros
         filtros_aplicados = []
         
@@ -75,37 +72,37 @@ class SessaoRepository(BaseRepository[Sessao]):
         if filtros.administrador_id is not None:
             filtros_aplicados.append(Sessao.administrador_id == filtros.administrador_id)
         
-        # Filtro por data específica (campo 'data' da sessão) - >= data informada
+        # Filtro por data específica (campo 'data' da sessão) - igualdade exata
         if filtros.data_especifica is not None:
-            filtros_aplicados.append(Sessao.data >= filtros.data_especifica)
+            filtros_aplicados.append(Sessao.data == filtros.data_especifica)
         
-        # Filtro por hora de início (DateTime) - combina data_especifica com horário se ambos estiverem presentes
+        # Filtro por hora de início (>= hora informada no dia de data_especifica)
         if filtros.inicio is not None:
             if filtros.data_especifica is not None:
-                # Combinar data de data_especifica com horário de inicio
+                # Combinar data de data_especifica com horário de inicio e usar >=
                 datetime_inicio = datetime.combine(filtros.data_especifica, filtros.inicio.time())
-                filtros_aplicados.append(Sessao.inicio_de_sessao == datetime_inicio)
+                filtros_aplicados.append(Sessao.inicio_de_sessao >= datetime_inicio)
             else:
-                # Usar inicio como está (datetime completo)
-                filtros_aplicados.append(Sessao.inicio_de_sessao == filtros.inicio)
+                # Se não tem data_especifica, usar >= com datetime completo
+                filtros_aplicados.append(Sessao.inicio_de_sessao >= filtros.inicio)
         
-        # Filtro por hora de finalização (DateTime) - combina data_especifica com horário se ambos estiverem presentes
+        # Filtro por hora de finalização (>= hora informada no dia de data_especifica)
         if filtros.finalizacao is not None:
             if filtros.data_especifica is not None:
-                # Combinar data de data_especifica com horário de finalizacao
+                # Combinar data de data_especifica com horário de finalizacao e usar >=
                 datetime_finalizacao = datetime.combine(filtros.data_especifica, filtros.finalizacao.time())
-                filtros_aplicados.append(Sessao.final_de_sessao == datetime_finalizacao)
+                filtros_aplicados.append(Sessao.final_de_sessao >= datetime_finalizacao)
             else:
-                # Usar finalizacao como está (datetime completo)
-                filtros_aplicados.append(Sessao.final_de_sessao == filtros.finalizacao)
+                # Se não tem data_especifica, usar >= com datetime completo
+                filtros_aplicados.append(Sessao.final_de_sessao >= filtros.finalizacao)
         
-        # Filtro por IP do computador (busca parcial) - precisa de join explícito
-        if filtros.ip_computador:
-            if not ja_fez_join_computador:
-                query = query.join(Computador, Sessao.computador_id == Computador.computador_id)
-                ja_fez_join_computador = True
+        # Filtro por IP do computador (busca parcial) - usar relacionamento direto
+        if filtros.ip_computador and filtros.ip_computador.strip():
+            # Usar has() para filtrar através do relacionamento
             filtros_aplicados.append(
-                Computador.ip_da_maquina.ilike(f"%{filtros.ip_computador}%")
+                Sessao.computador.has(
+                    Computador.ip_da_maquina.ilike(f"%{filtros.ip_computador.strip()}%")
+                )
             )
         
         # Filtro por sessões ativas
@@ -143,8 +140,7 @@ class SessaoRepository(BaseRepository[Sessao]):
         query = query.offset(filtros.skip).limit(filtros.limit)
         
         # Carregar relacionamentos necessários com joinedload (para evitar N+1 queries)
-        # Usar distinct() para evitar duplicatas causadas por joins
-        query = query.distinct().options(
+        query = query.options(
             joinedload(Sessao.computador).joinedload(Computador.sala).joinedload(Sala_coworking.subsecional),
             joinedload(Sessao.computador).joinedload(Computador.sala).joinedload(Sala_coworking.unidade).joinedload(Unidade.subsecional),
             joinedload(Sessao.usuario).joinedload(Usuario_advogado.cadastro)

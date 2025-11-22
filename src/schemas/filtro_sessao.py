@@ -15,9 +15,9 @@ class FiltroSessao(BaseModel):
     skip: int = 0
     limit: int = 100
     administrador_id: Optional[int] = None
-    data_especifica: Optional[date] = Field(None, description="Filtrar por data >= data informada (deve ser usada junto com inicio/finalizacao)")
-    inicio: Optional[datetime] = Field(None, description="Hora de início (DateTime) - usar junto com data_especifica")
-    finalizacao: Optional[datetime] = Field(None, description="Hora de finalização (DateTime) - usar junto com data_especifica")
+    data_especifica: Optional[date] = Field(None, description="Filtrar por data específica (igualdade exata) - deve ser usada junto com inicio/finalizacao")
+    inicio: Optional[datetime] = Field(None, description="Hora mínima de início (>=). Quando usado com data_especifica, combina a data com o horário e filtra sessões com início >= essa hora")
+    finalizacao: Optional[datetime] = Field(None, description="Hora mínima de finalização (>=). Quando usado com data_especifica, combina a data com o horário e filtra sessões com finalização >= essa hora")
     ip_computador: Optional[str] = None  # Busca parcial no IP do computador (string)
     apenas_ativas: Optional[bool] = None  # Apenas sessões ativas (True) ou todas (False/None)
     ordenar_por_data: Optional[OrdenacaoData] = OrdenacaoData.MAIS_RECENTE_PRIMEIRO
