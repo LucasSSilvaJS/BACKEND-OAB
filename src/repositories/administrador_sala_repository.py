@@ -9,7 +9,9 @@ class AdministradorSalaRepository(BaseRepository[Administrador_sala_coworking]):
         super().__init__(Administrador_sala_coworking, db)
 
     def get_by_id(self, admin_id: int) -> Optional[Administrador_sala_coworking]:
-        return self.db.query(Administrador_sala_coworking).filter(
+        return self.db.query(Administrador_sala_coworking).options(
+            joinedload(Administrador_sala_coworking.cadastro)
+        ).filter(
             Administrador_sala_coworking.admin_id == admin_id
         ).first()
 

@@ -9,7 +9,9 @@ class AnalistaTIRepository(BaseRepository[Analista_de_ti]):
         super().__init__(Analista_de_ti, db)
 
     def get_by_id(self, analista_id: int) -> Optional[Analista_de_ti]:
-        return self.db.query(Analista_de_ti).filter(
+        return self.db.query(Analista_de_ti).options(
+            joinedload(Analista_de_ti.cadastro)
+        ).filter(
             Analista_de_ti.analista_id == analista_id
         ).first()
 

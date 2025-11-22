@@ -15,9 +15,11 @@ security = HTTPBearer()
 
 class AuthUser:
     """Classe para armazenar informações do usuário autenticado"""
-    def __init__(self, usuario_id: int, tipo_usuario: TipoUsuario):
+    def __init__(self, usuario_id: int, tipo_usuario: TipoUsuario, nome: str = "", cadastro_id: int = 0):
         self.usuario_id = usuario_id
         self.tipo_usuario = tipo_usuario
+        self.nome = nome
+        self.cadastro_id = cadastro_id
 
 
 async def get_current_user(
@@ -59,7 +61,10 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    # Verificar se o usuário ainda existe no banco de dados
+    # Verificar se o usuário ainda existe no banco de dados e obter nome
+    nome = ""
+    cadastro_id = 0
+    
     if tipo_usuario == TipoUsuario.ADVOGADO:
         repo = UsuarioAdvogadoRepository(db)
         usuario = repo.get_by_id(usuario_id)
@@ -69,6 +74,9 @@ async def get_current_user(
                 detail="Usuário não encontrado",
                 headers={"WWW-Authenticate": "Bearer"},
             )
+        if usuario.cadastro:
+            nome = usuario.cadastro.nome
+            cadastro_id = usuario.cadastro_id
     elif tipo_usuario == TipoUsuario.ADMINISTRADOR:
         repo = AdministradorSalaRepository(db)
         usuario = repo.get_by_id(usuario_id)
@@ -78,6 +86,9 @@ async def get_current_user(
                 detail="Usuário não encontrado",
                 headers={"WWW-Authenticate": "Bearer"},
             )
+        if usuario.cadastro:
+            nome = usuario.cadastro.nome
+            cadastro_id = usuario.cadastro_id
     elif tipo_usuario == TipoUsuario.ANALISTA:
         repo = AnalistaTIRepository(db)
         usuario = repo.get_by_id(usuario_id)
@@ -87,8 +98,11 @@ async def get_current_user(
                 detail="Usuário não encontrado",
                 headers={"WWW-Authenticate": "Bearer"},
             )
+        if usuario.cadastro:
+            nome = usuario.cadastro.nome
+            cadastro_id = usuario.cadastro_id
     
-    return AuthUser(usuario_id=usuario_id, tipo_usuario=tipo_usuario)
+    return AuthUser(usuario_id=usuario_id, tipo_usuario=tipo_usuario, nome=nome, cadastro_id=cadastro_id)
 
 
 def require_permission(*allowed_types: TipoUsuario):

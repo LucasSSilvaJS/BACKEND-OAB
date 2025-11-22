@@ -9,7 +9,9 @@ class UsuarioAdvogadoRepository(BaseRepository[Usuario_advogado]):
         super().__init__(Usuario_advogado, db)
 
     def get_by_id(self, usuario_id: int) -> Optional[Usuario_advogado]:
-        return self.db.query(Usuario_advogado).filter(
+        return self.db.query(Usuario_advogado).options(
+            joinedload(Usuario_advogado.cadastro)
+        ).filter(
             Usuario_advogado.usuario_id == usuario_id
         ).first()
 

@@ -18,6 +18,7 @@ from src.routes import (
 )
 from src.routes.auth_router import router as auth_router
 from src.routes.dashboard_router import router as dashboard_router
+from src.routes.relatorio_router import router as relatorio_router
 
 # Importar todas as entities para garantir que as tabelas sejam criadas
 from src.entities import (
@@ -91,6 +92,7 @@ app.add_middleware(
 # Incluir todos os routers
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(dashboard_router, prefix="/api/v1")
+app.include_router(relatorio_router, prefix="/api/v1")
 app.include_router(cadastro_router, prefix="/api/v1")
 app.include_router(sessao_router, prefix="/api/v1")
 app.include_router(computador_router, prefix="/api/v1")
