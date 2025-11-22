@@ -1,5 +1,5 @@
-from typing import Optional
-from datetime import date, datetime
+from typing import Optional, Union
+from datetime import date, datetime, time
 from enum import Enum
 from pydantic import BaseModel, Field, model_validator
 
@@ -15,13 +15,12 @@ class FiltroSessao(BaseModel):
     skip: int = 0
     limit: int = 100
     administrador_id: Optional[int] = None
-    data_especifica: Optional[date] = None  # Data específica (deve ser usada junto com inicio/finalizacao)
+    data_especifica: Optional[date] = Field(None, description="Filtrar por data >= data informada (deve ser usada junto com inicio/finalizacao)")
     inicio: Optional[datetime] = Field(None, description="Hora de início (DateTime) - usar junto com data_especifica")
     finalizacao: Optional[datetime] = Field(None, description="Hora de finalização (DateTime) - usar junto com data_especifica")
     ip_computador: Optional[str] = None  # Busca parcial no IP do computador (string)
     apenas_ativas: Optional[bool] = None  # Apenas sessões ativas (True) ou todas (False/None)
     ordenar_por_data: Optional[OrdenacaoData] = OrdenacaoData.MAIS_RECENTE_PRIMEIRO
-    ordenar_por_usuario: Optional[bool] = False  # Ordenar alfabeticamente por nome do usuário
     
     @model_validator(mode='after')
     def validar_inicio_finalizacao_com_data(self):

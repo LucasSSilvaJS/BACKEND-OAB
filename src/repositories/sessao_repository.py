@@ -67,7 +67,6 @@ class SessaoRepository(BaseRepository[Sessao]):
         
         # Flags para controlar joins necessários (evitar duplicatas)
         ja_fez_join_computador = False
-        ja_fez_join_usuario = False
         
         # Aplicar filtros
         filtros_aplicados = []
@@ -76,17 +75,29 @@ class SessaoRepository(BaseRepository[Sessao]):
         if filtros.administrador_id is not None:
             filtros_aplicados.append(Sessao.administrador_id == filtros.administrador_id)
         
-        # Filtro por data específica (campo 'data' da sessão)
+        # Filtro por data específica (campo 'data' da sessão) - >= data informada
         if filtros.data_especifica is not None:
-            filtros_aplicados.append(Sessao.data == filtros.data_especifica)
+            filtros_aplicados.append(Sessao.data >= filtros.data_especifica)
         
-        # Filtro por hora de início (DateTime) - usado junto com data_especifica
+        # Filtro por hora de início (DateTime) - combina data_especifica com horário se ambos estiverem presentes
         if filtros.inicio is not None:
-            filtros_aplicados.append(Sessao.inicio_de_sessao == filtros.inicio)
+            if filtros.data_especifica is not None:
+                # Combinar data de data_especifica com horário de inicio
+                datetime_inicio = datetime.combine(filtros.data_especifica, filtros.inicio.time())
+                filtros_aplicados.append(Sessao.inicio_de_sessao == datetime_inicio)
+            else:
+                # Usar inicio como está (datetime completo)
+                filtros_aplicados.append(Sessao.inicio_de_sessao == filtros.inicio)
         
-        # Filtro por hora de finalização (DateTime) - usado junto com data_especifica
+        # Filtro por hora de finalização (DateTime) - combina data_especifica com horário se ambos estiverem presentes
         if filtros.finalizacao is not None:
-            filtros_aplicados.append(Sessao.final_de_sessao == filtros.finalizacao)
+            if filtros.data_especifica is not None:
+                # Combinar data de data_especifica com horário de finalizacao
+                datetime_finalizacao = datetime.combine(filtros.data_especifica, filtros.finalizacao.time())
+                filtros_aplicados.append(Sessao.final_de_sessao == datetime_finalizacao)
+            else:
+                # Usar finalizacao como está (datetime completo)
+                filtros_aplicados.append(Sessao.final_de_sessao == filtros.finalizacao)
         
         # Filtro por IP do computador (busca parcial) - precisa de join explícito
         if filtros.ip_computador:
@@ -121,14 +132,7 @@ class SessaoRepository(BaseRepository[Sessao]):
             query = query.filter(and_(*filtros_aplicados))
         
         # Ordenação
-        if filtros.ordenar_por_usuario:
-            # Precisamos fazer join com usuário e cadastro para ordenar por nome
-            if not ja_fez_join_usuario:
-                query = query.join(Usuario_advogado, Sessao.usuario_id == Usuario_advogado.usuario_id)
-                ja_fez_join_usuario = True
-            query = query.join(Cadastro, Usuario_advogado.cadastro_id == Cadastro.cadastro_id)
-            query = query.order_by(Cadastro.nome.asc())
-        elif filtros.ordenar_por_data == OrdenacaoData.MAIS_RECENTE_PRIMEIRO:
+        if filtros.ordenar_por_data == OrdenacaoData.MAIS_RECENTE_PRIMEIRO:
             # Mais recente primeiro (DESC)
             query = query.order_by(Sessao.inicio_de_sessao.desc())
         elif filtros.ordenar_por_data == OrdenacaoData.MAIS_ANTIGA_PRIMEIRO:
