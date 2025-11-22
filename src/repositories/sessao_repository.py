@@ -62,10 +62,31 @@ class SessaoRepository(BaseRepository[Sessao]):
 
     def filtrar_sessoes(self, filtros: FiltroSessao) -> List[Sessao]:
         """Método robusto para filtrar sessões com múltiplos critérios"""
+        # Verificar se precisa filtrar por IP
+        tem_filtro_ip = filtros.ip_computador is not None and filtros.ip_computador.strip() != ""
+        
+        # Se tem filtro de IP, primeiro obter os IDs das sessões que correspondem
+        sessao_ids_filtrados = None
+        if tem_filtro_ip:
+            ip_busca = f"%{filtros.ip_computador.strip()}%"
+            # Buscar IDs das sessões que têm computador com IP correspondente
+            sessao_ids_filtrados = self.db.query(Sessao.sessao_id).join(
+                Computador, Sessao.computador_id == Computador.computador_id
+            ).filter(Computador.ip_da_maquina.ilike(ip_busca)).all()
+            # Converter para lista de IDs
+            sessao_ids_filtrados = [sessao_id[0] for sessao_id in sessao_ids_filtrados]
+            # Se não encontrou nenhuma sessão, retornar lista vazia
+            if not sessao_ids_filtrados:
+                return []
+        
         # Inicializar query base
         query = self.db.query(Sessao)
         
-        # Aplicar filtros
+        # Aplicar filtro de IDs se filtramos por IP
+        if sessao_ids_filtrados is not None:
+            query = query.filter(Sessao.sessao_id.in_(sessao_ids_filtrados))
+        
+        # Aplicar outros filtros
         filtros_aplicados = []
         
         # Filtro por administrador
@@ -75,13 +96,6 @@ class SessaoRepository(BaseRepository[Sessao]):
         # Filtro por datetime mínimo de início (>= datetime_inicio)
         if filtros.datetime_inicio is not None:
             filtros_aplicados.append(Sessao.inicio_de_sessao >= filtros.datetime_inicio)
-        
-        # Filtro por IP do computador (busca parcial)
-        if filtros.ip_computador and filtros.ip_computador.strip():
-            ip_busca = f"%{filtros.ip_computador.strip()}%"
-            # Fazer join com Computador e aplicar filtro
-            query = query.join(Computador, Sessao.computador_id == Computador.computador_id)
-            filtros_aplicados.append(Computador.ip_da_maquina.ilike(ip_busca))
         
         # Filtro por sessões ativas
         if filtros.apenas_ativas is not None:
@@ -105,10 +119,6 @@ class SessaoRepository(BaseRepository[Sessao]):
         # Aplicar todos os filtros
         if filtros_aplicados:
             query = query.filter(and_(*filtros_aplicados))
-        
-        # Usar distinct() se filtramos por IP (fizemos join) para evitar duplicatas
-        if filtros.ip_computador and filtros.ip_computador.strip():
-            query = query.distinct()
         
         # Ordenação
         if filtros.ordenar_por_data == OrdenacaoData.MAIS_RECENTE_PRIMEIRO:
