@@ -1,11 +1,12 @@
 from typing import List, Optional
 from datetime import date
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, Query
 from sqlalchemy.orm import Session
 from src.routes.dependencies import get_db
 from src.routes.auth_dependencies import require_any_user, AuthUser
 from src.schemas.sessao import SessaoCreate, SessaoUpdate, SessaoResponse
 from src.schemas.comum import MensagemResponse
+from src.schemas.filtro_sessao import FiltroSessao, OrdenacaoData
 from src.services.sessao_service import SessaoService
 
 router = APIRouter(
@@ -47,25 +48,89 @@ def criar_sessao(
 @router.get(
     "",
     response_model=List[SessaoResponse],
-    summary="Listar sessões",
-    description="Retorna uma lista paginada de todas as sessões cadastradas, com filtro opcional por administrador.",
+    summary="Listar sessões com filtros avançados",
+    description="""
+    Retorna uma lista paginada de sessões com sistema robusto de filtros.
+    
+    **Filtros disponíveis:**
+    - Paginação (skip, limit)
+    - Administrador
+    - Data de início (intervalo)
+    - Data de finalização (intervalo)
+    - Data específica
+    - IP do computador (busca parcial)
+    - Apenas sessões ativas
+    - Ordenação por data (mais recente/antiga primeiro)
+    - Ordenação alfabética por nome do usuário
+    """,
 )
 def listar_sessoes(
-    skip: int = 0,
-    limit: int = 100,
-    administrador_id: Optional[int] = None,
+    skip: int = Query(0, ge=0, description="Número de registros a pular (paginação)"),
+    limit: int = Query(100, ge=1, le=1000, description="Número máximo de registros (padrão: 100, máx: 1000)"),
+    administrador_id: Optional[int] = Query(None, description="Filtrar por ID do administrador"),
+    data_inicio_de: Optional[date] = Query(None, description="Filtrar sessões iniciadas a partir desta data (YYYY-MM-DD)"),
+    data_inicio_ate: Optional[date] = Query(None, description="Filtrar sessões iniciadas até esta data (YYYY-MM-DD)"),
+    data_finalizacao_de: Optional[date] = Query(None, description="Filtrar sessões finalizadas a partir desta data (YYYY-MM-DD)"),
+    data_finalizacao_ate: Optional[date] = Query(None, description="Filtrar sessões finalizadas até esta data (YYYY-MM-DD)"),
+    data_especifica: Optional[date] = Query(None, description="Filtrar por data específica (YYYY-MM-DD). Prioridade sobre data_inicio"),
+    ip_computador: Optional[str] = Query(None, description="Buscar por IP do computador (busca parcial, case-insensitive)"),
+    apenas_ativas: Optional[bool] = Query(None, description="Retornar apenas sessões ativas (True) ou todas (False/None)"),
+    ordenar_por_data: OrdenacaoData = Query(
+        OrdenacaoData.MAIS_RECENTE_PRIMEIRO,
+        description="Ordenação por data: 'mais_recente' (DESC) ou 'mais_antiga' (ASC)"
+    ),
+    ordenar_por_usuario: bool = Query(False, description="Ordenar alfabeticamente por nome do usuário (prioridade sobre ordenar_por_data)"),
     current_user: AuthUser = Depends(require_any_user),
     db: Session = Depends(get_db)
 ):
     """
-    Lista todas as sessões com paginação e filtro opcional por administrador.
-
-    - **skip**: Número de registros a pular (para paginação)
-    - **limit**: Número máximo de registros a retornar (padrão: 100)
-    - **administrador_id**: ID do administrador para filtrar as sessões (opcional)
+    Lista sessões com sistema robusto de filtros e ordenação.
+    
+    **Exemplos de uso:**
+    
+    1. Buscar todas as sessões com paginação:
+       GET /sessoes?skip=0&limit=50
+    
+    2. Filtrar por administrador:
+       GET /sessoes?administrador_id=1
+    
+    3. Filtrar por data específica:
+       GET /sessoes?data_especifica=2025-11-22
+    
+    4. Filtrar sessões ativas ordenadas por usuário:
+       GET /sessoes?apenas_ativas=true&ordenar_por_usuario=true
+    
+    5. Buscar por IP do computador:
+       GET /sessoes?ip_computador=192.168
+    
+    6. Filtrar por intervalo de datas de início:
+       GET /sessoes?data_inicio_de=2025-11-01&data_inicio_ate=2025-11-30
+    
+    7. Ordenar da mais antiga para a mais recente:
+       GET /sessoes?ordenar_por_data=mais_antiga
+    
+    **Observações:**
+    - Todos os filtros podem ser combinados
+    - A ordenação por usuário tem prioridade sobre ordenação por data
+    - O filtro 'data_especifica' tem prioridade sobre 'data_inicio_de'/'data_inicio_ate'
     """
+    filtros = FiltroSessao(
+        skip=skip,
+        limit=limit,
+        administrador_id=administrador_id,
+        data_inicio_de=data_inicio_de,
+        data_inicio_ate=data_inicio_ate,
+        data_finalizacao_de=data_finalizacao_de,
+        data_finalizacao_ate=data_finalizacao_ate,
+        data_especifica=data_especifica,
+        ip_computador=ip_computador,
+        apenas_ativas=apenas_ativas,
+        ordenar_por_data=ordenar_por_data,
+        ordenar_por_usuario=ordenar_por_usuario
+    )
+    
     service = SessaoService(db)
-    return service.listar_sessoes(skip=skip, limit=limit, administrador_id=administrador_id)
+    return service.listar_sessoes(filtros)
 
 
 @router.get(

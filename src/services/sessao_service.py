@@ -7,6 +7,7 @@ from src.repositories.computador_repository import ComputadorRepository
 from src.repositories.usuario_advogado_repository import UsuarioAdvogadoRepository
 from src.repositories.administrador_sala_repository import AdministradorSalaRepository
 from src.schemas.sessao import SessaoCreate, SessaoUpdate, SessaoResponse
+from src.schemas.filtro_sessao import FiltroSessao
 
 
 class SessaoService:
@@ -107,11 +108,9 @@ class SessaoService:
         
         return SessaoResponse.model_validate(response_dict)
 
-    def listar_sessoes(self, skip: int = 0, limit: int = 100, administrador_id: Optional[int] = None) -> List[SessaoResponse]:
-        if administrador_id is not None:
-            sessoes = self.repository.get_by_administrador_paginado(administrador_id, skip=skip, limit=limit)
-        else:
-            sessoes = self.repository.get_all(skip=skip, limit=limit)
+    def listar_sessoes(self, filtros: FiltroSessao) -> List[SessaoResponse]:
+        """Lista sessões com filtros robustos"""
+        sessoes = self.repository.filtrar_sessoes(filtros)
         return [self._sessao_to_response(s) for s in sessoes]
 
     def listar_sessoes_ativas(self) -> List[SessaoResponse]:
