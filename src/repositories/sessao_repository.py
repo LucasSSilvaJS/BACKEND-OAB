@@ -114,11 +114,7 @@ class SessaoRepository(BaseRepository[Sessao]):
         if filtros_aplicados:
             query = query.filter(and_(*filtros_aplicados))
         
-        # Usar distinct() se fizemos join para evitar duplicatas
-        if precisa_join:
-            query = query.distinct()
-        
-        # Ordenação
+        # Ordenação (ANTES do distinct para garantir ordem correta)
         if filtros.ordenar_por_data == OrdenacaoData.MAIS_RECENTE_PRIMEIRO:
             # Mais recente primeiro (DESC)
             query = query.order_by(Sessao.inicio_de_sessao.desc())
@@ -126,7 +122,12 @@ class SessaoRepository(BaseRepository[Sessao]):
             # Mais antiga primeiro (ASC)
             query = query.order_by(Sessao.inicio_de_sessao.asc())
         
-        # Paginação
+        # Usar distinct() se fizemos join para evitar duplicatas
+        # IMPORTANTE: distinct() deve ser aplicado DEPOIS da ordenação e ANTES da paginação
+        if precisa_join:
+            query = query.distinct()
+        
+        # Paginação (offset e limit devem ser aplicados por último, após distinct)
         query = query.offset(filtros.skip).limit(filtros.limit)
         
         # Carregar relacionamentos necessários com joinedload (para evitar N+1 queries)
@@ -137,6 +138,62 @@ class SessaoRepository(BaseRepository[Sessao]):
         )
         
         return query.all()
+    
+    def contar_sessoes_filtradas(self, filtros: FiltroSessao) -> int:
+        """Conta o total de sessões que correspondem aos filtros (sem paginação)"""
+        # Inicializar query base
+        query = self.db.query(Sessao)
+        
+        # Verificar se precisa fazer join com Computador (para filtro de IP)
+        precisa_join = filtros.ip_computador is not None and filtros.ip_computador.strip() != ""
+        
+        # Fazer join com Computador se necessário
+        if precisa_join:
+            query = query.join(Computador, Sessao.computador_id == Computador.computador_id)
+        
+        # Aplicar filtros
+        filtros_aplicados = []
+        
+        # Filtro por administrador
+        if filtros.administrador_id is not None:
+            filtros_aplicados.append(Sessao.administrador_id == filtros.administrador_id)
+        
+        # Filtro por datetime mínimo de início (>= datetime_inicio)
+        if filtros.datetime_inicio is not None:
+            filtros_aplicados.append(Sessao.inicio_de_sessao >= filtros.datetime_inicio)
+        
+        # Filtro por IP do computador
+        if precisa_join:
+            ip_busca = filtros.ip_computador.strip()
+            query = query.filter(Computador.ip_da_maquina.ilike(f"%{ip_busca}%"))
+        
+        # Filtro por sessões ativas
+        if filtros.apenas_ativas is not None:
+            if filtros.apenas_ativas:
+                filtros_aplicados.append(
+                    and_(
+                        Sessao.ativado == True,
+                        Sessao.final_de_sessao.is_(None)
+                    )
+                )
+            else:
+                filtros_aplicados.append(
+                    or_(
+                        Sessao.ativado == False,
+                        Sessao.final_de_sessao.isnot(None)
+                    )
+                )
+        
+        # Aplicar todos os outros filtros
+        if filtros_aplicados:
+            query = query.filter(and_(*filtros_aplicados))
+        
+        # Usar distinct() se fizemos join para contar corretamente
+        if precisa_join:
+            query = query.distinct()
+        
+        # Contar total (sem paginação)
+        return query.count()
 
     def create(self, obj_in: dict, analista_ids: Optional[List[int]] = None) -> Sessao:
         db_obj = Sessao(**obj_in)
