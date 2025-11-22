@@ -146,11 +146,50 @@ def popular_salas_coworking(db: Session, salas: List[Dict[str, Any]]) -> List[Sa
     
     Returns:
         Lista de objetos Sala_coworking criados
+    
+    Raises:
+        ValueError: Se a unidade não pertencer à subsecional informada
     """
     garantir_tabelas_existem()
     objetos = []
-    for sala_data in salas:
+    erros = []
+    
+    for idx, sala_data in enumerate(salas):
         try:
+            # Validar se subsecional existe
+            subsecional_id = sala_data.get("subsecional_id")
+            unidade_id = sala_data.get("unidade_id")
+            
+            if subsecional_id is None or unidade_id is None:
+                erros.append(f"Sala {idx + 1}: subsecional_id e unidade_id são obrigatórios")
+                continue
+            
+            # Verificar se a subsecional existe
+            subsecional = db.query(Subsecional).filter(
+                Subsecional.subsecional_id == subsecional_id
+            ).first()
+            
+            if not subsecional:
+                erros.append(f"Sala {idx + 1}: Subsecional com ID {subsecional_id} não encontrada")
+                continue
+            
+            # Verificar se a unidade existe
+            unidade = db.query(Unidade).filter(
+                Unidade.unidade_id == unidade_id
+            ).first()
+            
+            if not unidade:
+                erros.append(f"Sala {idx + 1}: Unidade com ID {unidade_id} não encontrada")
+                continue
+            
+            # VALIDAÇÃO CRÍTICA: Verificar se a unidade pertence à subsecional
+            if unidade.subsecional_id != subsecional_id:
+                erros.append(
+                    f"Sala {idx + 1}: A unidade {unidade_id} não pertence à subsecional {subsecional_id}. "
+                    f"A unidade pertence à subsecional {unidade.subsecional_id}"
+                )
+                continue
+            
             # Remover ID explícito se existir (deixar o banco gerar automaticamente)
             data_clean = {k: v for k, v in sala_data.items() if k != "coworking_id"}
             obj = Sala_coworking(**data_clean)
@@ -158,12 +197,28 @@ def popular_salas_coworking(db: Session, salas: List[Dict[str, Any]]) -> List[Sa
             objetos.append(obj)
         except IntegrityError:
             db.rollback()
+            erros.append(f"Sala {idx + 1}: Erro de integridade (possível duplicação)")
             continue
+        except Exception as e:
+            db.rollback()
+            erros.append(f"Sala {idx + 1}: Erro inesperado - {str(e)}")
+            continue
+    
+    if erros and not objetos:
+        # Se nenhum objeto foi criado e há erros, levantar exceção
+        raise ValueError(f"Erro ao popular salas de coworking:\n" + "\n".join(erros))
     
     try:
         db.commit()
         for obj in objetos:
             db.refresh(obj)
+        
+        if erros:
+            # Se alguns objetos foram criados mas houve erros, retornar com aviso
+            print(f"⚠️ Aviso: {len(objetos)} sala(s) criada(s), mas {len(erros)} erro(s) ocorreram:")
+            for erro in erros:
+                print(f"  - {erro}")
+        
         return objetos
     except IntegrityError as e:
         db.rollback()
@@ -181,11 +236,32 @@ def popular_computadores(db: Session, computadores: List[Dict[str, Any]]) -> Lis
     
     Returns:
         Lista de objetos Computador criados
+    
+    Raises:
+        ValueError: Se a sala de coworking não existir
     """
     garantir_tabelas_existem()
     objetos = []
-    for computador_data in computadores:
+    erros = []
+    
+    for idx, computador_data in enumerate(computadores):
         try:
+            # Validar se coworking_id existe
+            coworking_id = computador_data.get("coworking_id")
+            
+            if coworking_id is None:
+                erros.append(f"Computador {idx + 1}: coworking_id é obrigatório")
+                continue
+            
+            # Verificar se a sala de coworking existe
+            sala = db.query(Sala_coworking).filter(
+                Sala_coworking.coworking_id == coworking_id
+            ).first()
+            
+            if not sala:
+                erros.append(f"Computador {idx + 1}: Sala de coworking com ID {coworking_id} não encontrada")
+                continue
+            
             # Remover ID explícito se existir (deixar o banco gerar automaticamente)
             data_clean = {k: v for k, v in computador_data.items() if k != "computador_id"}
             obj = Computador(**data_clean)
@@ -193,12 +269,28 @@ def popular_computadores(db: Session, computadores: List[Dict[str, Any]]) -> Lis
             objetos.append(obj)
         except IntegrityError:
             db.rollback()
+            erros.append(f"Computador {idx + 1}: Erro de integridade (possível duplicação de IP ou tombamento)")
             continue
+        except Exception as e:
+            db.rollback()
+            erros.append(f"Computador {idx + 1}: Erro inesperado - {str(e)}")
+            continue
+    
+    if erros and not objetos:
+        # Se nenhum objeto foi criado e há erros, levantar exceção
+        raise ValueError(f"Erro ao popular computadores:\n" + "\n".join(erros))
     
     try:
         db.commit()
         for obj in objetos:
             db.refresh(obj)
+        
+        if erros:
+            # Se alguns objetos foram criados mas houve erros, retornar com aviso
+            print(f"⚠️ Aviso: {len(objetos)} computador(es) criado(s), mas {len(erros)} erro(s) ocorreram:")
+            for erro in erros:
+                print(f"  - {erro}")
+        
         return objetos
     except IntegrityError as e:
         db.rollback()
@@ -216,11 +308,32 @@ def popular_usuarios_advogados(db: Session, usuarios: List[Dict[str, Any]]) -> L
     
     Returns:
         Lista de objetos Usuario_advogado criados
+    
+    Raises:
+        ValueError: Se o cadastro não existir
     """
     garantir_tabelas_existem()
     objetos = []
-    for usuario_data in usuarios:
+    erros = []
+    
+    for idx, usuario_data in enumerate(usuarios):
         try:
+            # Validar se cadastro_id existe
+            cadastro_id = usuario_data.get("cadastro_id")
+            
+            if cadastro_id is None:
+                erros.append(f"Usuário advogado {idx + 1}: cadastro_id é obrigatório")
+                continue
+            
+            # Verificar se o cadastro existe
+            cadastro = db.query(Cadastro).filter(
+                Cadastro.cadastro_id == cadastro_id
+            ).first()
+            
+            if not cadastro:
+                erros.append(f"Usuário advogado {idx + 1}: Cadastro com ID {cadastro_id} não encontrado")
+                continue
+            
             # Remover ID explícito se existir (deixar o banco gerar automaticamente)
             data_clean = {k: v for k, v in usuario_data.items() if k != "usuario_id"}
             obj = Usuario_advogado(**data_clean)
@@ -228,12 +341,28 @@ def popular_usuarios_advogados(db: Session, usuarios: List[Dict[str, Any]]) -> L
             objetos.append(obj)
         except IntegrityError:
             db.rollback()
+            erros.append(f"Usuário advogado {idx + 1}: Erro de integridade (possível duplicação de registro_oab)")
             continue
+        except Exception as e:
+            db.rollback()
+            erros.append(f"Usuário advogado {idx + 1}: Erro inesperado - {str(e)}")
+            continue
+    
+    if erros and not objetos:
+        # Se nenhum objeto foi criado e há erros, levantar exceção
+        raise ValueError(f"Erro ao popular usuários advogados:\n" + "\n".join(erros))
     
     try:
         db.commit()
         for obj in objetos:
             db.refresh(obj)
+        
+        if erros:
+            # Se alguns objetos foram criados mas houve erros, retornar com aviso
+            print(f"⚠️ Aviso: {len(objetos)} usuário(s) advogado(s) criado(s), mas {len(erros)} erro(s) ocorreram:")
+            for erro in erros:
+                print(f"  - {erro}")
+        
         return objetos
     except IntegrityError as e:
         db.rollback()
@@ -251,11 +380,32 @@ def popular_analistas_ti(db: Session, analistas: List[Dict[str, Any]]) -> List[A
     
     Returns:
         Lista de objetos Analista_de_ti criados
+    
+    Raises:
+        ValueError: Se o cadastro não existir
     """
     garantir_tabelas_existem()
     objetos = []
-    for analista_data in analistas:
+    erros = []
+    
+    for idx, analista_data in enumerate(analistas):
         try:
+            # Validar se cadastro_id existe
+            cadastro_id = analista_data.get("cadastro_id")
+            
+            if cadastro_id is None:
+                erros.append(f"Analista de TI {idx + 1}: cadastro_id é obrigatório")
+                continue
+            
+            # Verificar se o cadastro existe
+            cadastro = db.query(Cadastro).filter(
+                Cadastro.cadastro_id == cadastro_id
+            ).first()
+            
+            if not cadastro:
+                erros.append(f"Analista de TI {idx + 1}: Cadastro com ID {cadastro_id} não encontrado")
+                continue
+            
             # Remover ID explícito se existir (deixar o banco gerar automaticamente)
             data_clean = {k: v for k, v in analista_data.items() if k != "analista_id"}
             # Hash da senha se fornecida
@@ -266,12 +416,28 @@ def popular_analistas_ti(db: Session, analistas: List[Dict[str, Any]]) -> List[A
             objetos.append(obj)
         except IntegrityError:
             db.rollback()
+            erros.append(f"Analista de TI {idx + 1}: Erro de integridade (possível duplicação de usuário)")
             continue
+        except Exception as e:
+            db.rollback()
+            erros.append(f"Analista de TI {idx + 1}: Erro inesperado - {str(e)}")
+            continue
+    
+    if erros and not objetos:
+        # Se nenhum objeto foi criado e há erros, levantar exceção
+        raise ValueError(f"Erro ao popular analistas de TI:\n" + "\n".join(erros))
     
     try:
         db.commit()
         for obj in objetos:
             db.refresh(obj)
+        
+        if erros:
+            # Se alguns objetos foram criados mas houve erros, retornar com aviso
+            print(f"⚠️ Aviso: {len(objetos)} analista(s) de TI criado(s), mas {len(erros)} erro(s) ocorreram:")
+            for erro in erros:
+                print(f"  - {erro}")
+        
         return objetos
     except IntegrityError as e:
         db.rollback()
@@ -289,11 +455,32 @@ def popular_administradores_sala(db: Session, administradores: List[Dict[str, An
     
     Returns:
         Lista de objetos Administrador_sala_coworking criados
+    
+    Raises:
+        ValueError: Se o cadastro não existir
     """
     garantir_tabelas_existem()
     objetos = []
-    for admin_data in administradores:
+    erros = []
+    
+    for idx, admin_data in enumerate(administradores):
         try:
+            # Validar se cadastro_id existe
+            cadastro_id = admin_data.get("cadastro_id")
+            
+            if cadastro_id is None:
+                erros.append(f"Administrador {idx + 1}: cadastro_id é obrigatório")
+                continue
+            
+            # Verificar se o cadastro existe
+            cadastro = db.query(Cadastro).filter(
+                Cadastro.cadastro_id == cadastro_id
+            ).first()
+            
+            if not cadastro:
+                erros.append(f"Administrador {idx + 1}: Cadastro com ID {cadastro_id} não encontrado")
+                continue
+            
             # Remover ID explícito se existir (deixar o banco gerar automaticamente)
             data_clean = {k: v for k, v in admin_data.items() if k != "admin_id"}
             # Hash da senha se fornecida
@@ -304,12 +491,28 @@ def popular_administradores_sala(db: Session, administradores: List[Dict[str, An
             objetos.append(obj)
         except IntegrityError:
             db.rollback()
+            erros.append(f"Administrador {idx + 1}: Erro de integridade (possível duplicação de usuário)")
             continue
+        except Exception as e:
+            db.rollback()
+            erros.append(f"Administrador {idx + 1}: Erro inesperado - {str(e)}")
+            continue
+    
+    if erros and not objetos:
+        # Se nenhum objeto foi criado e há erros, levantar exceção
+        raise ValueError(f"Erro ao popular administradores de sala:\n" + "\n".join(erros))
     
     try:
         db.commit()
         for obj in objetos:
             db.refresh(obj)
+        
+        if erros:
+            # Se alguns objetos foram criados mas houve erros, retornar com aviso
+            print(f"⚠️ Aviso: {len(objetos)} administrador(es) criado(s), mas {len(erros)} erro(s) ocorreram:")
+            for erro in erros:
+                print(f"  - {erro}")
+        
         return objetos
     except IntegrityError as e:
         db.rollback()
@@ -328,11 +531,60 @@ def popular_sessoes(db: Session, sessoes: List[Dict[str, Any]]) -> List[Sessao]:
     
     Returns:
         Lista de objetos Sessao criados
+    
+    Raises:
+        ValueError: Se computador, usuário ou administrador não existirem
     """
     garantir_tabelas_existem()
     objetos = []
-    for sessao_data in sessoes:
+    erros = []
+    
+    for idx, sessao_data in enumerate(sessoes):
         try:
+            # Validar campos obrigatórios
+            computador_id = sessao_data.get("computador_id")
+            usuario_id = sessao_data.get("usuario_id")
+            administrador_id = sessao_data.get("administrador_id")
+            
+            if computador_id is None:
+                erros.append(f"Sessão {idx + 1}: computador_id é obrigatório")
+                continue
+            
+            if usuario_id is None:
+                erros.append(f"Sessão {idx + 1}: usuario_id é obrigatório")
+                continue
+            
+            if administrador_id is None:
+                erros.append(f"Sessão {idx + 1}: administrador_id é obrigatório")
+                continue
+            
+            # Verificar se o computador existe
+            computador = db.query(Computador).filter(
+                Computador.computador_id == computador_id
+            ).first()
+            
+            if not computador:
+                erros.append(f"Sessão {idx + 1}: Computador com ID {computador_id} não encontrado")
+                continue
+            
+            # Verificar se o usuário advogado existe
+            usuario = db.query(Usuario_advogado).filter(
+                Usuario_advogado.usuario_id == usuario_id
+            ).first()
+            
+            if not usuario:
+                erros.append(f"Sessão {idx + 1}: Usuário advogado com ID {usuario_id} não encontrado")
+                continue
+            
+            # Verificar se o administrador existe
+            administrador = db.query(Administrador_sala_coworking).filter(
+                Administrador_sala_coworking.admin_id == administrador_id
+            ).first()
+            
+            if not administrador:
+                erros.append(f"Sessão {idx + 1}: Administrador com ID {administrador_id} não encontrado")
+                continue
+            
             # Remover ID explícito se existir (deixar o banco gerar automaticamente)
             data_clean = {k: v for k, v in sessao_data.items() if k != "sessao_id"}
             obj = Sessao(**data_clean)
@@ -340,12 +592,28 @@ def popular_sessoes(db: Session, sessoes: List[Dict[str, Any]]) -> List[Sessao]:
             objetos.append(obj)
         except IntegrityError:
             db.rollback()
+            erros.append(f"Sessão {idx + 1}: Erro de integridade")
             continue
+        except Exception as e:
+            db.rollback()
+            erros.append(f"Sessão {idx + 1}: Erro inesperado - {str(e)}")
+            continue
+    
+    if erros and not objetos:
+        # Se nenhum objeto foi criado e há erros, levantar exceção
+        raise ValueError(f"Erro ao popular sessões:\n" + "\n".join(erros))
     
     try:
         db.commit()
         for obj in objetos:
             db.refresh(obj)
+        
+        if erros:
+            # Se alguns objetos foram criados mas houve erros, retornar com aviso
+            print(f"⚠️ Aviso: {len(objetos)} sessão(ões) criada(s), mas {len(erros)} erro(s) ocorreram:")
+            for erro in erros:
+                print(f"  - {erro}")
+        
         return objetos
     except IntegrityError as e:
         db.rollback()

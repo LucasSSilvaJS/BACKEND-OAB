@@ -17,17 +17,28 @@ class SalaCoworkingService:
 
     def criar_sala(self, sala: SalaCoworkingCreate) -> SalaCoworkingResponse:
         # Validar subsecional
-        if not self.subsecional_repo.get_by_id(sala.subsecional_id):
+        subsecional = self.subsecional_repo.get_by_id(sala.subsecional_id)
+        if not subsecional:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Subsecional não encontrada"
             )
         
         # Validar unidade
-        if not self.unidade_repo.get_by_id(sala.unidade_id):
+        unidade = self.unidade_repo.get_by_id(sala.unidade_id)
+        if not unidade:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Unidade não encontrada"
+            )
+        
+        # VALIDAÇÃO CRÍTICA: Verificar se a unidade pertence à subsecional
+        if unidade.subsecional_id != sala.subsecional_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"A unidade selecionada não pertence à subsecional informada. "
+                       f"A unidade {sala.unidade_id} pertence à subsecional {unidade.subsecional_id}, "
+                       f"mas foi informada a subsecional {sala.subsecional_id}."
             )
         
         # Validar administrador se fornecido
@@ -75,18 +86,33 @@ class SalaCoworkingService:
             )
         
         # Validar subsecional se fornecido
-        if sala.subsecional_id and not self.subsecional_repo.get_by_id(sala.subsecional_id):
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Subsecional não encontrada"
-            )
+        subsecional_id = sala.subsecional_id if sala.subsecional_id else db_sala.subsecional_id
+        if sala.subsecional_id:
+            subsecional = self.subsecional_repo.get_by_id(sala.subsecional_id)
+            if not subsecional:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Subsecional não encontrada"
+                )
         
         # Validar unidade se fornecido
-        if sala.unidade_id and not self.unidade_repo.get_by_id(sala.unidade_id):
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Unidade não encontrada"
-            )
+        unidade_id = sala.unidade_id if sala.unidade_id else db_sala.unidade_id
+        if sala.unidade_id:
+            unidade = self.unidade_repo.get_by_id(sala.unidade_id)
+            if not unidade:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Unidade não encontrada"
+                )
+            
+            # VALIDAÇÃO CRÍTICA: Verificar se a unidade pertence à subsecional
+            if unidade.subsecional_id != subsecional_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"A unidade selecionada não pertence à subsecional informada. "
+                           f"A unidade {sala.unidade_id} pertence à subsecional {unidade.subsecional_id}, "
+                           f"mas foi informada a subsecional {subsecional_id}."
+                )
         
         # Validar administrador se fornecido
         if sala.administrador_id and not self.admin_repo.get_by_id(sala.administrador_id):

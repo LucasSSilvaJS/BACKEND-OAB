@@ -284,6 +284,7 @@ def popular_unidades(
     **Validações:**
     - `subsecional_id` deve existir no banco
     - `unidade_id` deve existir no banco
+    - **A unidade DEVE pertencer à subsecional informada** (validação crítica)
     - `administrador_id` deve existir no banco (se fornecido)
     
     **Resposta:**
