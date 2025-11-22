@@ -54,10 +54,10 @@ def criar_sessao(
     
     **Filtros disponíveis:**
     - Paginação (skip, limit)
-    - Por ID (administrador, computador, usuário)
-    - Por hora de início/fim (DateTime)
+    - Por ID do administrador
+    - Por hora de início/fim (DateTime) - usar junto com data_especifica
     - Por data específica (campo 'data')
-    - Por IP do computador (busca parcial)
+    - Por IP do computador (string - busca parcial)
     - Status (ativas/inativas)
     - Ordenação (data ou alfabética por usuário)
     """,
@@ -66,16 +66,11 @@ def listar_sessoes(
     skip: int = Query(0, ge=0, description="Número de registros a pular (paginação)"),
     limit: int = Query(100, ge=1, le=1000, description="Número máximo de registros (padrão: 100, máx: 1000)"),
     administrador_id: Optional[int] = Query(None, description="Filtrar por ID do administrador"),
-    computador_id: Optional[int] = Query(None, description="Filtrar por ID do computador"),
-    usuario_id: Optional[int] = Query(None, description="Filtrar por ID do usuário"),
-    inicio_de: Optional[datetime] = Query(None, description="Filtrar sessões com início >= esta data/hora (YYYY-MM-DDTHH:MM:SS)"),
-    inicio_ate: Optional[datetime] = Query(None, description="Filtrar sessões com início <= esta data/hora (YYYY-MM-DDTHH:MM:SS)"),
-    finalizacao_de: Optional[datetime] = Query(None, description="Filtrar sessões com finalização >= esta data/hora (YYYY-MM-DDTHH:MM:SS)"),
-    finalizacao_ate: Optional[datetime] = Query(None, description="Filtrar sessões com finalização <= esta data/hora (YYYY-MM-DDTHH:MM:SS)"),
-    data_especifica: Optional[date] = Query(None, description="Filtrar por data específica - campo 'data' da sessão (YYYY-MM-DD)"),
+    data_especifica: Optional[date] = Query(None, description="Filtrar por data específica - campo 'data' da sessão (YYYY-MM-DD). Obrigatório para usar inicio/finalizacao"),
+    inicio: Optional[datetime] = Query(None, description="Filtrar por hora de início exata (DateTime). DEVE ser usado junto com data_especifica (YYYY-MM-DDTHH:MM:SS)"),
+    finalizacao: Optional[datetime] = Query(None, description="Filtrar por hora de finalização exata (DateTime). DEVE ser usado junto com data_especifica (YYYY-MM-DDTHH:MM:SS)"),
     ip_computador: Optional[str] = Query(None, description="Buscar por IP do computador (busca parcial, case-insensitive)"),
-    apenas_ativas: Optional[bool] = Query(None, description="Retornar apenas sessões ativas (ativado=True e final_de_sessao IS NULL)"),
-    apenas_inativas: Optional[bool] = Query(None, description="Retornar apenas sessões inativas (ativado=False OU final_de_sessao IS NOT NULL)"),
+    apenas_ativas: Optional[bool] = Query(None, description="True: apenas sessões ativas | False: apenas sessões inativas | None: todas"),
     ordenar_por_data: OrdenacaoData = Query(
         OrdenacaoData.MAIS_RECENTE_PRIMEIRO,
         description="Ordenação por data: 'mais_recente' (DESC) ou 'mais_antiga' (ASC)"
@@ -93,46 +88,42 @@ def listar_sessoes(
     - `final_de_sessao` (DateTime, nullable): Data e hora de finalização
     - `ativado` (Boolean): Status da sessão
     
+    **Regras importantes:**
+    - `inicio` e `finalizacao` DEVEM ser usados JUNTOS com `data_especifica`
+    - Se `inicio` ou `finalizacao` forem informados sem `data_especifica`, retornará erro
+    - `apenas_ativas=true`: retorna apenas sessões ativas (ativado=True e final_de_sessao IS NULL)
+    - `apenas_ativas=false`: retorna apenas sessões inativas (ativado=False OU final_de_sessao IS NOT NULL)
+    - `apenas_ativas=None`: retorna todas as sessões
+    
     **Exemplos de uso:**
     
-    1. Filtrar por intervalo de hora de início:
-       GET /sessoes?inicio_de=2025-11-22T08:00:00&inicio_ate=2025-11-22T18:00:00
-    
-    2. Filtrar sessões ativas de hoje:
+    1. Filtrar sessões ativas de uma data específica:
        GET /sessoes?data_especifica=2025-11-22&apenas_ativas=true
     
-    3. Buscar por IP do computador:
+    2. Filtrar por data e hora de início específica:
+       GET /sessoes?data_especifica=2025-11-22&inicio=2025-11-22T08:00:00
+    
+    3. Filtrar por data, hora de início e finalização:
+       GET /sessoes?data_especifica=2025-11-22&inicio=2025-11-22T08:00:00&finalizacao=2025-11-22T18:00:00
+    
+    4. Buscar por IP do computador (string - busca parcial):
        GET /sessoes?ip_computador=192.168.1
     
-    4. Filtrar por computador e ordenar por usuário:
-       GET /sessoes?computador_id=5&ordenar_por_usuario=true
-    
-    5. Sessões finalizadas em um período:
-       GET /sessoes?finalizacao_de=2025-11-01T00:00:00&finalizacao_ate=2025-11-30T23:59:59
+    5. Filtrar apenas sessões inativas:
+       GET /sessoes?apenas_ativas=false
     
     6. Combinar múltiplos filtros:
-       GET /sessoes?administrador_id=1&apenas_ativas=true&ordenar_por_data=mais_recente&limit=50
-    
-    **Observações:**
-    - Todos os filtros podem ser combinados
-    - A ordenação por usuário tem prioridade sobre ordenação por data
-    - Filtros de hora usam DateTime (inclui hora), filtro 'data_especifica' usa apenas data
-    - Filtro de IP é busca parcial (case-insensitive)
+       GET /sessoes?data_especifica=2025-11-22&apenas_ativas=true&ordenar_por_data=mais_recente&limit=50
     """
     filtros = FiltroSessao(
         skip=skip,
         limit=limit,
         administrador_id=administrador_id,
-        computador_id=computador_id,
-        usuario_id=usuario_id,
-        inicio_de=inicio_de,
-        inicio_ate=inicio_ate,
-        finalizacao_de=finalizacao_de,
-        finalizacao_ate=finalizacao_ate,
         data_especifica=data_especifica,
+        inicio=inicio,
+        finalizacao=finalizacao,
         ip_computador=ip_computador,
         apenas_ativas=apenas_ativas,
-        apenas_inativas=apenas_inativas,
         ordenar_por_data=ordenar_por_data,
         ordenar_por_usuario=ordenar_por_usuario
     )

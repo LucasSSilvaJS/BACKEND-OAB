@@ -76,29 +76,17 @@ class SessaoRepository(BaseRepository[Sessao]):
         if filtros.administrador_id is not None:
             filtros_aplicados.append(Sessao.administrador_id == filtros.administrador_id)
         
-        # Filtro por computador ID
-        if filtros.computador_id is not None:
-            filtros_aplicados.append(Sessao.computador_id == filtros.computador_id)
-        
-        # Filtro por usuário ID
-        if filtros.usuario_id is not None:
-            filtros_aplicados.append(Sessao.usuario_id == filtros.usuario_id)
-        
         # Filtro por data específica (campo 'data' da sessão)
         if filtros.data_especifica is not None:
             filtros_aplicados.append(Sessao.data == filtros.data_especifica)
         
-        # Filtro por hora de início (DateTime) - usando o campo inicio_de_sessao
-        if filtros.inicio_de is not None:
-            filtros_aplicados.append(Sessao.inicio_de_sessao >= filtros.inicio_de)
-        if filtros.inicio_ate is not None:
-            filtros_aplicados.append(Sessao.inicio_de_sessao <= filtros.inicio_ate)
+        # Filtro por hora de início (DateTime) - usado junto com data_especifica
+        if filtros.inicio is not None:
+            filtros_aplicados.append(Sessao.inicio_de_sessao == filtros.inicio)
         
-        # Filtro por hora de finalização (DateTime) - usando o campo final_de_sessao
-        if filtros.finalizacao_de is not None:
-            filtros_aplicados.append(Sessao.final_de_sessao >= filtros.finalizacao_de)
-        if filtros.finalizacao_ate is not None:
-            filtros_aplicados.append(Sessao.final_de_sessao <= filtros.finalizacao_ate)
+        # Filtro por hora de finalização (DateTime) - usado junto com data_especifica
+        if filtros.finalizacao is not None:
+            filtros_aplicados.append(Sessao.final_de_sessao == filtros.finalizacao)
         
         # Filtro por IP do computador (busca parcial) - precisa de join explícito
         if filtros.ip_computador:
@@ -110,22 +98,23 @@ class SessaoRepository(BaseRepository[Sessao]):
             )
         
         # Filtro por sessões ativas
-        if filtros.apenas_ativas is not None and filtros.apenas_ativas:
-            filtros_aplicados.append(
-                and_(
-                    Sessao.ativado == True,
-                    Sessao.final_de_sessao.is_(None)
+        if filtros.apenas_ativas is not None:
+            if filtros.apenas_ativas:
+                # Apenas sessões ativas (ativado=True e final_de_sessao IS NULL)
+                filtros_aplicados.append(
+                    and_(
+                        Sessao.ativado == True,
+                        Sessao.final_de_sessao.is_(None)
+                    )
                 )
-            )
-        
-        # Filtro por sessões inativas
-        if filtros.apenas_inativas is not None and filtros.apenas_inativas:
-            filtros_aplicados.append(
-                or_(
-                    Sessao.ativado == False,
-                    Sessao.final_de_sessao.isnot(None)
+            else:
+                # Apenas sessões inativas (ativado=False OU final_de_sessao IS NOT NULL)
+                filtros_aplicados.append(
+                    or_(
+                        Sessao.ativado == False,
+                        Sessao.final_de_sessao.isnot(None)
+                    )
                 )
-            )
         
         # Aplicar todos os filtros
         if filtros_aplicados:

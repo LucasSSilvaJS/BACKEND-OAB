@@ -1,7 +1,7 @@
 from typing import Optional
 from datetime import date, datetime
 from enum import Enum
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, model_validator
 
 
 class OrdenacaoData(str, Enum):
@@ -15,16 +15,18 @@ class FiltroSessao(BaseModel):
     skip: int = 0
     limit: int = 100
     administrador_id: Optional[int] = None
-    computador_id: Optional[int] = None  # Filtrar por ID do computador
-    usuario_id: Optional[int] = None  # Filtrar por ID do usuário
-    inicio_de: Optional[datetime] = None  # Hora de início >= (DateTime)
-    inicio_ate: Optional[datetime] = None  # Hora de início <= (DateTime)
-    finalizacao_de: Optional[datetime] = None  # Hora de finalização >= (DateTime)
-    finalizacao_ate: Optional[datetime] = None  # Hora de finalização <= (DateTime)
-    data_especifica: Optional[date] = None  # Filtro por data específica (campo 'data')
-    ip_computador: Optional[str] = None  # Busca parcial no IP do computador
-    apenas_ativas: Optional[bool] = None  # Apenas sessões ativas (ativado=True e final_de_sessao IS NULL)
-    apenas_inativas: Optional[bool] = None  # Apenas sessões inativas (ativado=False OU final_de_sessao IS NOT NULL)
+    data_especifica: Optional[date] = None  # Data específica (deve ser usada junto com inicio/finalizacao)
+    inicio: Optional[datetime] = Field(None, description="Hora de início (DateTime) - usar junto com data_especifica")
+    finalizacao: Optional[datetime] = Field(None, description="Hora de finalização (DateTime) - usar junto com data_especifica")
+    ip_computador: Optional[str] = None  # Busca parcial no IP do computador (string)
+    apenas_ativas: Optional[bool] = None  # Apenas sessões ativas (True) ou todas (False/None)
     ordenar_por_data: Optional[OrdenacaoData] = OrdenacaoData.MAIS_RECENTE_PRIMEIRO
     ordenar_por_usuario: Optional[bool] = False  # Ordenar alfabeticamente por nome do usuário
+    
+    @model_validator(mode='after')
+    def validar_inicio_finalizacao_com_data(self):
+        """Valida que inicio e finalizacao sejam usados apenas com data_especifica"""
+        if (self.inicio is not None or self.finalizacao is not None) and self.data_especifica is None:
+            raise ValueError("Os campos 'inicio' e 'finalizacao' devem ser usados junto com 'data_especifica'")
+        return self
 
