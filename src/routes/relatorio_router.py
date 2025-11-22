@@ -59,5 +59,5 @@ def gerar_relatorio(
     - Conclusões baseadas em dados
     """
     service = RelatorioService(db)
-    return service.gerar_relatorio(request, current_user.nome)
+    return service.gerar_relatorio(request, current_user.nome, current_user.usuario_id)
 

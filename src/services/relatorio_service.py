@@ -1,5 +1,6 @@
 import os
 from typing import Dict
+from datetime import datetime
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 import google.generativeai as genai
@@ -90,7 +91,7 @@ class RelatorioService:
             "frequencia_mensal": frequencia_mensal
         }
 
-    def _criar_prompt(self, dados: Dict) -> str:
+    def _criar_prompt(self, dados: Dict, analista_nome: str, analista_id: int) -> str:
         """Cria o prompt para o LLM com base nos dados coletados"""
         subsecional = dados["subsecional"]
         unidade = dados["unidade"]
@@ -120,6 +121,8 @@ class RelatorioService:
         if dados["coworking_mais_utilizado"]:
             coworking_texto = f"{dados['coworking_mais_utilizado']['nome_da_sala']} com {dados['coworking_mais_utilizado']['total_sessoes']} sessões"
         
+        data_hora_atual = datetime.now().strftime('%d/%m/%Y às %H:%M')
+        
         prompt = f"""
 Você é um assistente especializado em análise de dados de salas de coworking da OAB (Ordem dos Advogados do Brasil).
 
@@ -128,65 +131,78 @@ A OAB possui um sistema de gerenciamento de salas de coworking espalhadas por di
 Cada sala contém computadores que são utilizados por advogados mediante sessões controladas. 
 O sistema monitora o uso desses computadores, registrando início e fim de sessões, picos de acesso, e padrões de utilização.
 
-**OBJETIVO:**
-Gerar um relatório técnico completo em formato Markdown analisando o uso da sala de coworking especificada.
+**INFORMAÇÕES DO RELATÓRIO:**
+- **Gerado por:** {analista_nome} (Analista de TI - ID: {analista_id})
+- **Data e Hora:** {data_hora_atual}
+- **Tipo:** Análise Técnica de Uso de Sala Coworking
 
 **DADOS DA SALA DE COWORKING:**
 
-**Localização:**
-- Subseccional: {subsecional.nome}
-- Unidade: {unidade.nome} (Hierarquia: {unidade.hierarquia.value})
-- Sala de Coworking: {sala.nome_da_sala}
+**📍 Localização:**
+- **Subseccional:** {subsecional.nome} (ID: {subsecional.subsecional_id})
+- **Unidade:** {unidade.nome} (ID: {unidade.unidade_id})
+- **Hierarquia da Unidade:** {unidade.hierarquia.value}
+- **Sala de Coworking:** {sala.nome_da_sala} (ID: {sala.coworking_id})
 
-**Métricas de Uso:**
-- Sessões Ativas no Momento: {dados['sessoes_ativas']}
-- Total Histórico de Sessões: {dados['total_sessoes']}
-- Pico de Acesso: {pico_texto}
-- Coworking Mais Utilizado na Unidade: {coworking_texto}
+**📊 Métricas de Uso:**
+- **Sessões Ativas no Momento:** {dados['sessoes_ativas']}
+- **Total Histórico de Sessões:** {dados['total_sessoes']}
+- **Pico de Acesso Registrado:** {pico_texto}
+- **Coworking Mais Utilizado na Unidade:** {coworking_texto}
 
-**Frequência de Uso Mensal:**
+**📅 Frequência de Uso Mensal:**
 {frequencia_texto if frequencia_texto else "Não há dados históricos de frequência mensal disponíveis"}
 
 **INSTRUÇÕES PARA O RELATÓRIO:**
 
-1. **Estrutura do Relatório:**
-   - Título principal com o nome da sala e localização
+1. **Estrutura do Relatório (OBRIGATÓRIA):**
+   - Cabeçalho com título, data/hora e informações do analista
+   - Seção de informações da sala (localização completa)
    - Sumário executivo (breve resumo dos principais insights)
-   - Análise detalhada de uso
+   - Análise detalhada de métricas
    - Padrões identificados e tendências
-   - Recomendações práticas para otimização
-   - Conclusão
+   - Comparativo com outras salas (se houver dados)
+   - Recomendações práticas e acionáveis
+   - Conclusão e próximos passos
 
 2. **Análise Esperada:**
    - Interprete os dados de forma profissional e técnica
+   - Calcule percentuais e taxas quando possível
    - Identifique padrões de uso (horários de pico, meses mais movimentados)
-   - Compare o desempenho desta sala com outras na unidade (se houver dados)
-   - Calcule taxas de ocupação e eficiência quando possível
+   - Compare o desempenho desta sala com outras na unidade
    - Identifique possíveis problemas ou oportunidades de melhoria
+   - Analise a sazonalidade do uso (se houver dados mensais)
 
 3. **Recomendações:**
-   - Sugira melhorias na gestão da sala
-   - Proponha ações para aumentar a utilização (se baixa) ou gerenciar a demanda (se alta)
-   - Considere aspectos de manutenção, horários de funcionamento e recursos
+   - Sejam específicas e acionáveis
+   - Considerem aspectos de manutenção, horários de funcionamento e recursos
+   - Incluam prazos estimados quando relevante
+   - Priorizem as recomendações por impacto
 
 4. **Formato:**
-   - Use Markdown com títulos, subtítulos, listas e tabelas
-   - Seja conciso mas completo
-   - Use linguagem técnica mas acessível
+   - Use Markdown com títulos (##), subtítulos (###), listas e tabelas
    - Inclua emojis relevantes para tornar o relatório mais visual
+   - Crie tabelas para comparações quando apropriado
+   - Use negrito e itálico para destacar informações importantes
+   - Seja conciso mas completo
+
+**IMPORTANTE:** 
+- Comece o relatório com um cabeçalho contendo as informações do analista e data/hora
+- Inclua TODAS as informações fornecidas acima no relatório
+- Seja profissional e técnico na linguagem
 
 Gere o relatório completo em Markdown AGORA:
 """
         return prompt
 
-    def gerar_relatorio(self, request: RelatorioRequest, analista_nome: str) -> RelatorioResponse:
+    def gerar_relatorio(self, request: RelatorioRequest, analista_nome: str, analista_id: int) -> RelatorioResponse:
         """Gera o relatório usando Google Gemini"""
         try:
             # Validar e obter dados
             dados = self._validar_e_obter_dados(request)
             
             # Criar prompt
-            prompt = self._criar_prompt(dados)
+            prompt = self._criar_prompt(dados, analista_nome, analista_id)
             
             # Gerar relatório com Gemini
             response = self.model.generate_content(prompt)
@@ -199,10 +215,18 @@ Gere o relatório completo em Markdown AGORA:
             
             return RelatorioResponse(
                 markdown=response.text,
+                subsecional_id=request.subsecional_id,
                 subsecional_nome=dados["subsecional"].nome,
+                unidade_id=request.unidade_id,
                 unidade_nome=dados["unidade"].nome,
+                unidade_hierarquia=dados["unidade"].hierarquia.value,
+                coworking_id=request.coworking_id,
                 coworking_nome=dados["sala"].nome_da_sala,
-                gerado_por=analista_nome
+                gerado_por=analista_nome,
+                gerado_por_id=analista_id,
+                data_geracao=datetime.now(),
+                total_sessoes=dados["total_sessoes"],
+                sessoes_ativas=dados["sessoes_ativas"]
             )
             
         except HTTPException:
