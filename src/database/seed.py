@@ -5,6 +5,8 @@ Cada função recebe um array de objetos e insere todos de uma vez.
 from typing import List, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
+from src.database.base import Base
+from src.database.connection import engine
 from src.entities.cadastro import Cadastro
 from src.entities.subsecional import Subsecional
 from src.entities.unidade import Unidade
@@ -15,6 +17,17 @@ from src.entities.analista_de_ti import Analista_de_ti
 from src.entities.administrador_sala_coworking import Administrador_sala_coworking
 from src.entities.sessao import Sessao
 from src.utils.security import hash_password
+
+
+def garantir_tabelas_existem():
+    """
+    Garante que todas as tabelas existam no banco de dados.
+    Cria as tabelas se elas não existirem.
+    """
+    try:
+        Base.metadata.create_all(bind=engine)
+    except Exception as e:
+        print(f"⚠️ Aviso: Erro ao criar tabelas: {e}")
 
 
 def popular_cadastros(db: Session, cadastros: List[Dict[str, Any]]) -> List[Cadastro]:
@@ -29,10 +42,13 @@ def popular_cadastros(db: Session, cadastros: List[Dict[str, Any]]) -> List[Cada
     Returns:
         Lista de objetos Cadastro criados
     """
+    garantir_tabelas_existem()
     objetos = []
     for cadastro_data in cadastros:
         try:
-            obj = Cadastro(**cadastro_data)
+            # Remover ID explícito se existir (deixar o banco gerar automaticamente)
+            data_clean = {k: v for k, v in cadastro_data.items() if k != "cadastro_id"}
+            obj = Cadastro(**data_clean)
             db.add(obj)
             objetos.append(obj)
         except IntegrityError:
@@ -61,10 +77,13 @@ def popular_subsecionais(db: Session, subsecionais: List[Dict[str, Any]]) -> Lis
     Returns:
         Lista de objetos Subsecional criados
     """
+    garantir_tabelas_existem()
     objetos = []
     for subsecional_data in subsecionais:
         try:
-            obj = Subsecional(**subsecional_data)
+            # Remover ID explícito se existir (deixar o banco gerar automaticamente)
+            data_clean = {k: v for k, v in subsecional_data.items() if k != "subsecional_id"}
+            obj = Subsecional(**data_clean)
             db.add(obj)
             objetos.append(obj)
         except IntegrityError:
@@ -93,10 +112,13 @@ def popular_unidades(db: Session, unidades: List[Dict[str, Any]]) -> List[Unidad
     Returns:
         Lista de objetos Unidade criados
     """
+    garantir_tabelas_existem()
     objetos = []
     for unidade_data in unidades:
         try:
-            obj = Unidade(**unidade_data)
+            # Remover ID explícito se existir (deixar o banco gerar automaticamente)
+            data_clean = {k: v for k, v in unidade_data.items() if k != "unidade_id"}
+            obj = Unidade(**data_clean)
             db.add(obj)
             objetos.append(obj)
         except IntegrityError:
@@ -125,10 +147,13 @@ def popular_salas_coworking(db: Session, salas: List[Dict[str, Any]]) -> List[Sa
     Returns:
         Lista de objetos Sala_coworking criados
     """
+    garantir_tabelas_existem()
     objetos = []
     for sala_data in salas:
         try:
-            obj = Sala_coworking(**sala_data)
+            # Remover ID explícito se existir (deixar o banco gerar automaticamente)
+            data_clean = {k: v for k, v in sala_data.items() if k != "coworking_id"}
+            obj = Sala_coworking(**data_clean)
             db.add(obj)
             objetos.append(obj)
         except IntegrityError:
@@ -157,10 +182,13 @@ def popular_computadores(db: Session, computadores: List[Dict[str, Any]]) -> Lis
     Returns:
         Lista de objetos Computador criados
     """
+    garantir_tabelas_existem()
     objetos = []
     for computador_data in computadores:
         try:
-            obj = Computador(**computador_data)
+            # Remover ID explícito se existir (deixar o banco gerar automaticamente)
+            data_clean = {k: v for k, v in computador_data.items() if k != "computador_id"}
+            obj = Computador(**data_clean)
             db.add(obj)
             objetos.append(obj)
         except IntegrityError:
@@ -189,10 +217,13 @@ def popular_usuarios_advogados(db: Session, usuarios: List[Dict[str, Any]]) -> L
     Returns:
         Lista de objetos Usuario_advogado criados
     """
+    garantir_tabelas_existem()
     objetos = []
     for usuario_data in usuarios:
         try:
-            obj = Usuario_advogado(**usuario_data)
+            # Remover ID explícito se existir (deixar o banco gerar automaticamente)
+            data_clean = {k: v for k, v in usuario_data.items() if k != "usuario_id"}
+            obj = Usuario_advogado(**data_clean)
             db.add(obj)
             objetos.append(obj)
         except IntegrityError:
@@ -221,13 +252,16 @@ def popular_analistas_ti(db: Session, analistas: List[Dict[str, Any]]) -> List[A
     Returns:
         Lista de objetos Analista_de_ti criados
     """
+    garantir_tabelas_existem()
     objetos = []
     for analista_data in analistas:
         try:
+            # Remover ID explícito se existir (deixar o banco gerar automaticamente)
+            data_clean = {k: v for k, v in analista_data.items() if k != "analista_id"}
             # Hash da senha se fornecida
-            if "senha" in analista_data:
-                analista_data["senha"] = hash_password(analista_data["senha"])
-            obj = Analista_de_ti(**analista_data)
+            if "senha" in data_clean:
+                data_clean["senha"] = hash_password(data_clean["senha"])
+            obj = Analista_de_ti(**data_clean)
             db.add(obj)
             objetos.append(obj)
         except IntegrityError:
@@ -256,13 +290,16 @@ def popular_administradores_sala(db: Session, administradores: List[Dict[str, An
     Returns:
         Lista de objetos Administrador_sala_coworking criados
     """
+    garantir_tabelas_existem()
     objetos = []
     for admin_data in administradores:
         try:
+            # Remover ID explícito se existir (deixar o banco gerar automaticamente)
+            data_clean = {k: v for k, v in admin_data.items() if k != "admin_id"}
             # Hash da senha se fornecida
-            if "senha" in admin_data:
-                admin_data["senha"] = hash_password(admin_data["senha"])
-            obj = Administrador_sala_coworking(**admin_data)
+            if "senha" in data_clean:
+                data_clean["senha"] = hash_password(data_clean["senha"])
+            obj = Administrador_sala_coworking(**data_clean)
             db.add(obj)
             objetos.append(obj)
         except IntegrityError:
@@ -292,10 +329,13 @@ def popular_sessoes(db: Session, sessoes: List[Dict[str, Any]]) -> List[Sessao]:
     Returns:
         Lista de objetos Sessao criados
     """
+    garantir_tabelas_existem()
     objetos = []
     for sessao_data in sessoes:
         try:
-            obj = Sessao(**sessao_data)
+            # Remover ID explícito se existir (deixar o banco gerar automaticamente)
+            data_clean = {k: v for k, v in sessao_data.items() if k != "sessao_id"}
+            obj = Sessao(**data_clean)
             db.add(obj)
             objetos.append(obj)
         except IntegrityError:
