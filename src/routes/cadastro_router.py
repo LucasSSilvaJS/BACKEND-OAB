@@ -46,7 +46,6 @@ def criar_cadastro(cadastro: CadastroCreate, db: Session = Depends(get_db)):
 def listar_cadastros(
     skip: int = 0,
     limit: int = 100,
-    current_user: AuthUser = Depends(require_any_user),
     db: Session = Depends(get_db)
 ):
     """

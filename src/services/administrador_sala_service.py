@@ -13,15 +13,21 @@ from src.utils.security import hash_password
 
 class AdministradorSalaService:
     def __init__(self, db: Session):
+        self.db = db
         self.repository = AdministradorSalaRepository(db)
         self.cadastro_repo = CadastroRepository(db)
 
     def criar_administrador(self, administrador: AdministradorSalaCreate) -> AdministradorSalaResponse:
-        # Validar cadastro
-        if not self.cadastro_repo.get_by_id(administrador.cadastro_id):
+        # Validar cadastro - buscar diretamente da sessão para garantir que está atualizado
+        from src.entities.cadastro import Cadastro
+        cadastro = self.db.query(Cadastro).filter(
+            Cadastro.cadastro_id == administrador.cadastro_id
+        ).first()
+        
+        if not cadastro:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Cadastro não encontrado"
+                detail=f"Cadastro com ID {administrador.cadastro_id} não encontrado"
             )
         
         # Verificar se usuário já existe
