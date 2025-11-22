@@ -40,17 +40,19 @@ API_URL=http://localhost:8000
 
 ## 📦 Instalando Dependências
 
-Instale a biblioteca do Google Gemini:
+Instale a biblioteca oficial do Google Gemini:
 
 ```bash
-pip install google-generativeai
+pip install google-genai
 ```
 
 Ou adicione ao seu `requirements.txt`:
 
 ```txt
-google-generativeai>=0.3.0
+google-genai>=1.0.0
 ```
+
+**Importante:** Use `google-genai` (nova API oficial), não `google-generativeai` (antiga).
 
 ## 🧪 Testando a Configuração
 

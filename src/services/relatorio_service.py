@@ -3,7 +3,7 @@ from typing import Dict
 from datetime import datetime
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
-import google.generativeai as genai
+from google import genai
 
 from src.repositories.dashboard_repository import DashboardRepository
 from src.repositories.subsecional_repository import SubsecionalRepository
@@ -21,16 +21,15 @@ class RelatorioService:
         self.unidade_repo = UnidadeRepository(db)
         self.sala_repo = SalaCoworkingRepository(db)
         
-        # Configurar Gemini API
+        # Configurar Gemini API (nova sintaxe oficial)
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="GEMINI_API_KEY não configurada no arquivo .env"
             )
-        genai.configure(api_key=api_key)
-        # Usar Gemini 2.5 Flash (mais recente e rápido)
-        self.model = genai.GenerativeModel('gemini-2.5-flash')
+        # Usar o novo cliente da API Gemini
+        self.client = genai.Client(api_key=api_key)
 
     def _validar_e_obter_dados(self, request: RelatorioRequest) -> Dict:
         """Valida e obtém os dados necessários para o relatório"""
@@ -204,8 +203,11 @@ Gere o relatório completo em Markdown AGORA:
             # Criar prompt
             prompt = self._criar_prompt(dados, analista_nome, analista_id)
             
-            # Gerar relatório com Gemini
-            response = self.model.generate_content(prompt)
+            # Gerar relatório com Gemini usando a nova API
+            response = self.client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=prompt
+            )
             
             if not response.text:
                 raise HTTPException(
