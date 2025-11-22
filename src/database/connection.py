@@ -71,11 +71,12 @@ engine = create_engine(
 if DATABASE_URL and "postgresql" in DATABASE_URL:
     from sqlalchemy import event
     from sqlalchemy.pool import Pool
+    from sqlalchemy.orm import Session
     
     schema_name = os.getenv("DB_SCHEMA", "middleware_oab")
     
     @event.listens_for(Pool, "connect")
-    def set_search_path(dbapi_conn, connection_record):
+    def set_search_path_on_connect(dbapi_conn, connection_record):
         """Define o search_path para cada nova conexão (após estabelecer conexão)"""
         # Executar SET search_path após a conexão ser estabelecida
         # Isso funciona com conexões pooled do Neon
@@ -85,6 +86,14 @@ if DATABASE_URL and "postgresql" in DATABASE_URL:
             cursor.execute(f"SET search_path TO {schema_name}, public")
         finally:
             cursor.close()
+    
+    @event.listens_for(Session, "after_begin")
+    def set_search_path_on_session(session, transaction, connection):
+        """Garante que o search_path está definido quando uma sessão começa uma transação"""
+        # Aplicar search_path também quando a sessão inicia uma transação
+        # Isso garante que mesmo conexões reutilizadas do pool tenham o schema correto
+        from sqlalchemy import text
+        connection.execute(text(f"SET search_path TO {schema_name}, public"))
 
 # Criar SessionLocal para usar como dependência
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
