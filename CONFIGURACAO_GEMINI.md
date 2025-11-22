@@ -72,12 +72,13 @@ Content-Type: application/json
 
 ## 🤖 Modelo de IA Utilizado
 
-O sistema utiliza o **Gemini 1.5 Flash**, o modelo mais recente e rápido do Google:
+O sistema utiliza o **Gemini 2.5 Flash**, o modelo mais recente e rápido do Google:
 
 - ⚡ Respostas rápidas e eficientes
 - 🎯 Alta qualidade de análise
 - 💰 Custo-efetivo
 - 🌐 Suporte multilíngue
+- 🆕 Última geração do Google AI
 
 ## 📊 Recursos do Relatório
 
@@ -88,6 +89,12 @@ O relatório gerado por IA inclui:
 - 🔍 Identificação de padrões e tendências
 - 💡 Recomendações práticas de otimização
 - 📝 Conclusões baseadas em dados reais
+
+## 🔄 Sobre o Modelo
+
+O sistema utiliza o **Gemini 2.5 Flash** - a versão mais recente disponível.
+
+**Nota Importante:** Os modelos gemini-pro, gemini-1.5-flash e gemini-1.5-pro foram descontinuados. O Gemini 2.5 Flash é a versão atual e recomendada.
 
 ## 🔒 Segurança
 

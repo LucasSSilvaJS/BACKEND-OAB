@@ -28,8 +28,8 @@ class RelatorioService:
                 detail="GEMINI_API_KEY não configurada no arquivo .env"
             )
         genai.configure(api_key=api_key)
-        # Usar Gemini 1.5 Flash (mais recente e rápido)
-        self.model = genai.GenerativeModel('gemini-1.5-flash')
+        # Usar Gemini 2.5 Flash (mais recente e rápido)
+        self.model = genai.GenerativeModel('gemini-2.5-flash')
 
     def _validar_e_obter_dados(self, request: RelatorioRequest) -> Dict:
         """Valida e obtém os dados necessários para o relatório"""
