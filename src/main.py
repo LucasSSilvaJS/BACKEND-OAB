@@ -19,6 +19,7 @@ from src.routes import (
 from src.routes.auth_router import router as auth_router
 from src.routes.dashboard_router import router as dashboard_router
 from src.routes.relatorio_router import router as relatorio_router
+from src.routes.seed_router import router as seed_router
 
 # Importar todas as entities para garantir que as tabelas sejam criadas
 from src.entities import (
@@ -102,6 +103,7 @@ app.include_router(subsecional_router, prefix="/api/v1")
 app.include_router(usuario_advogado_router, prefix="/api/v1")
 app.include_router(analista_ti_router, prefix="/api/v1")
 app.include_router(administrador_sala_router, prefix="/api/v1")
+app.include_router(seed_router, prefix="/api/v1")
 
 
 @app.get(
