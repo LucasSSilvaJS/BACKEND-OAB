@@ -50,7 +50,13 @@ else:
 # Adicionar timeout para evitar loading infinito
 connect_args = {}
 if DATABASE_URL and "postgresql" in DATABASE_URL:
-    connect_args = {"connect_timeout": 10}  # Timeout de 10 segundos para PostgreSQL
+    # Configurar schema para PostgreSQL (Neon)
+    # Usar search_path para definir o schema padrão
+    schema_name = os.getenv("DB_SCHEMA", "middleware_oab")
+    connect_args = {
+        "connect_timeout": 10,  # Timeout de 10 segundos para PostgreSQL
+        "options": f"-c search_path={schema_name},public"
+    }
 else:
     connect_args = {"connect_timeout": 10}  # Timeout de 10 segundos para MySQL
 
@@ -61,6 +67,20 @@ engine = create_engine(
     pool_timeout=20,  # Timeout de 20 segundos para obter conexão do pool
     pool_recycle=3600,  # Reciclar conexões após 1 hora
 )
+
+# Para PostgreSQL, garantir que o schema seja usado em todas as conexões
+if DATABASE_URL and "postgresql" in DATABASE_URL:
+    from sqlalchemy import event
+    from sqlalchemy.pool import Pool
+    
+    schema_name = os.getenv("DB_SCHEMA", "middleware_oab")
+    
+    @event.listens_for(Pool, "connect")
+    def set_search_path(dbapi_conn, connection_record):
+        """Define o search_path para cada nova conexão"""
+        cursor = dbapi_conn.cursor()
+        cursor.execute(f"SET search_path TO {schema_name}, public")
+        cursor.close()
 
 # Criar SessionLocal para usar como dependência
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
