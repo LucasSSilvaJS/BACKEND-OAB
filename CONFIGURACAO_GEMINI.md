@@ -70,6 +70,15 @@ Content-Type: application/json
 
 **⚠️ Nota:** Este endpoint é **exclusivo para Analistas de TI**.
 
+## 🤖 Modelo de IA Utilizado
+
+O sistema utiliza o **Gemini 1.5 Flash**, o modelo mais recente e rápido do Google:
+
+- ⚡ Respostas rápidas e eficientes
+- 🎯 Alta qualidade de análise
+- 💰 Custo-efetivo
+- 🌐 Suporte multilíngue
+
 ## 📊 Recursos do Relatório
 
 O relatório gerado por IA inclui:
