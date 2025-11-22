@@ -14,9 +14,9 @@ class Sala_coworking(Base):
 
     coworking_id = Column(Integer, primary_key=True, autoincrement=True)
     nome_da_sala = Column(String(100), nullable=False)
-    subsecional_id = Column(Integer, ForeignKey("Subsecional.subsecional_id"))
-    unidade_id = Column(Integer, ForeignKey("Unidade.unidade_id"))
-    administrador_id = Column(Integer, ForeignKey("Administrador_sala_coworking.admin_id"), nullable=True)
+    subsecional_id = Column(Integer, ForeignKey(f"{SCHEMA_NAME}.Subsecional.subsecional_id"))
+    unidade_id = Column(Integer, ForeignKey(f"{SCHEMA_NAME}.Unidade.unidade_id"))
+    administrador_id = Column(Integer, ForeignKey(f"{SCHEMA_NAME}.Administrador_sala_coworking.admin_id"), nullable=True)
 
 
     subsecional = relationship("Subsecional", back_populates="salas")

@@ -17,7 +17,7 @@ class Administrador_sala_coworking(Base):
     senha = Column(String(100), nullable=False)
     adm_local = Column(Boolean, default=False)
     admin_central = Column(Boolean, default=False)
-    cadastro_id = Column(Integer, ForeignKey("Cadastro.cadastro_id"))
+    cadastro_id = Column(Integer, ForeignKey(f"{SCHEMA_NAME}.Cadastro.cadastro_id"))
 
 
     cadastro = relationship("Cadastro", back_populates="administrador_sala")

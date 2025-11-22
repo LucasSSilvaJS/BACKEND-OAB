@@ -23,7 +23,7 @@ class Unidade(Base):
     endereco = Column(String(255))
     latitude = Column(Float(precision=6))
     longitude = Column(Float(precision=6))
-    subsecional_id = Column(Integer, ForeignKey("Subsecional.subsecional_id"))
+    subsecional_id = Column(Integer, ForeignKey(f"{SCHEMA_NAME}.Subsecional.subsecional_id"))
 
     subsecional = relationship("Subsecional", back_populates="unidades")
     salas = relationship("Sala_coworking", back_populates="unidade")

@@ -15,8 +15,8 @@ class Analista_de_ti(Base):
     analista_id = Column(Integer, primary_key=True, autoincrement=True)
     usuario = Column(String(50), nullable=False, unique=True)
     senha = Column(String(100), nullable=False)
-    cadastro_id = Column(Integer, ForeignKey("Cadastro.cadastro_id"))
+    cadastro_id = Column(Integer, ForeignKey(f"{SCHEMA_NAME}.Cadastro.cadastro_id"))
 
 
     cadastro = relationship("Cadastro", back_populates="analista_ti")
-    sessoes = relationship("Sessao", secondary="Sessoes_analistas", back_populates="analistas")
+    sessoes = relationship("Sessao", secondary=f"{SCHEMA_NAME}.Sessoes_analistas", back_populates="analistas")
