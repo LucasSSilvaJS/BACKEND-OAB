@@ -62,13 +62,12 @@ class SessaoRepository(BaseRepository[Sessao]):
 
     def filtrar_sessoes(self, filtros: FiltroSessao) -> List[Sessao]:
         """Método robusto para filtrar sessões com múltiplos critérios"""
-        # Base query com joins necessários
-        query = self.db.query(Sessao).options(
-            joinedload(Sessao.computador).joinedload(Computador.sala).joinedload(Sala_coworking.subsecional),
-            joinedload(Sessao.computador).joinedload(Computador.sala).joinedload(Sala_coworking.unidade).joinedload(Unidade.subsecional),
-            joinedload(Sessao.usuario).joinedload(Usuario_advogado.cadastro),
-            joinedload(Sessao.computador)
-        )
+        # Inicializar query base
+        query = self.db.query(Sessao)
+        
+        # Flags para controlar joins necessários (evitar duplicatas)
+        ja_fez_join_computador = False
+        ja_fez_join_usuario = False
         
         # Aplicar filtros
         filtros_aplicados = []
@@ -77,46 +76,56 @@ class SessaoRepository(BaseRepository[Sessao]):
         if filtros.administrador_id is not None:
             filtros_aplicados.append(Sessao.administrador_id == filtros.administrador_id)
         
-        # Filtro por data específica (tem prioridade sobre data_inicio)
+        # Filtro por computador ID
+        if filtros.computador_id is not None:
+            filtros_aplicados.append(Sessao.computador_id == filtros.computador_id)
+        
+        # Filtro por usuário ID
+        if filtros.usuario_id is not None:
+            filtros_aplicados.append(Sessao.usuario_id == filtros.usuario_id)
+        
+        # Filtro por data específica (campo 'data' da sessão)
         if filtros.data_especifica is not None:
             filtros_aplicados.append(Sessao.data == filtros.data_especifica)
-        else:
-            # Filtro por intervalo de data de início
-            if filtros.data_inicio_de is not None:
-                filtros_aplicados.append(
-                    func.date(Sessao.inicio_de_sessao) >= filtros.data_inicio_de
-                )
-            if filtros.data_inicio_ate is not None:
-                filtros_aplicados.append(
-                    func.date(Sessao.inicio_de_sessao) <= filtros.data_inicio_ate
-                )
         
-        # Filtro por intervalo de data de finalização
-        if filtros.data_finalizacao_de is not None:
-            filtros_aplicados.append(
-                func.date(Sessao.final_de_sessao) >= filtros.data_finalizacao_de
-            )
-        if filtros.data_finalizacao_ate is not None:
-            filtros_aplicados.append(
-                func.date(Sessao.final_de_sessao) <= filtros.data_finalizacao_ate
-            )
+        # Filtro por hora de início (DateTime) - usando o campo inicio_de_sessao
+        if filtros.inicio_de is not None:
+            filtros_aplicados.append(Sessao.inicio_de_sessao >= filtros.inicio_de)
+        if filtros.inicio_ate is not None:
+            filtros_aplicados.append(Sessao.inicio_de_sessao <= filtros.inicio_ate)
         
-        # Filtro por IP do computador (busca parcial)
+        # Filtro por hora de finalização (DateTime) - usando o campo final_de_sessao
+        if filtros.finalizacao_de is not None:
+            filtros_aplicados.append(Sessao.final_de_sessao >= filtros.finalizacao_de)
+        if filtros.finalizacao_ate is not None:
+            filtros_aplicados.append(Sessao.final_de_sessao <= filtros.finalizacao_ate)
+        
+        # Filtro por IP do computador (busca parcial) - precisa de join explícito
         if filtros.ip_computador:
-            query = query.join(Computador, Sessao.computador_id == Computador.computador_id)
+            if not ja_fez_join_computador:
+                query = query.join(Computador, Sessao.computador_id == Computador.computador_id)
+                ja_fez_join_computador = True
             filtros_aplicados.append(
                 Computador.ip_da_maquina.ilike(f"%{filtros.ip_computador}%")
             )
         
         # Filtro por sessões ativas
-        if filtros.apenas_ativas is not None:
-            if filtros.apenas_ativas:
-                filtros_aplicados.append(
-                    and_(
-                        Sessao.ativado == True,
-                        Sessao.final_de_sessao.is_(None)
-                    )
+        if filtros.apenas_ativas is not None and filtros.apenas_ativas:
+            filtros_aplicados.append(
+                and_(
+                    Sessao.ativado == True,
+                    Sessao.final_de_sessao.is_(None)
                 )
+            )
+        
+        # Filtro por sessões inativas
+        if filtros.apenas_inativas is not None and filtros.apenas_inativas:
+            filtros_aplicados.append(
+                or_(
+                    Sessao.ativado == False,
+                    Sessao.final_de_sessao.isnot(None)
+                )
+            )
         
         # Aplicar todos os filtros
         if filtros_aplicados:
@@ -124,8 +133,10 @@ class SessaoRepository(BaseRepository[Sessao]):
         
         # Ordenação
         if filtros.ordenar_por_usuario:
-            # Ordenar alfabeticamente por nome do usuário
-            query = query.join(Usuario_advogado, Sessao.usuario_id == Usuario_advogado.usuario_id)
+            # Precisamos fazer join com usuário e cadastro para ordenar por nome
+            if not ja_fez_join_usuario:
+                query = query.join(Usuario_advogado, Sessao.usuario_id == Usuario_advogado.usuario_id)
+                ja_fez_join_usuario = True
             query = query.join(Cadastro, Usuario_advogado.cadastro_id == Cadastro.cadastro_id)
             query = query.order_by(Cadastro.nome.asc())
         elif filtros.ordenar_por_data == OrdenacaoData.MAIS_RECENTE_PRIMEIRO:
@@ -137,6 +148,14 @@ class SessaoRepository(BaseRepository[Sessao]):
         
         # Paginação
         query = query.offset(filtros.skip).limit(filtros.limit)
+        
+        # Carregar relacionamentos necessários com joinedload (para evitar N+1 queries)
+        # Usar distinct() para evitar duplicatas causadas por joins
+        query = query.distinct().options(
+            joinedload(Sessao.computador).joinedload(Computador.sala).joinedload(Sala_coworking.subsecional),
+            joinedload(Sessao.computador).joinedload(Computador.sala).joinedload(Sala_coworking.unidade).joinedload(Unidade.subsecional),
+            joinedload(Sessao.usuario).joinedload(Usuario_advogado.cadastro)
+        )
         
         return query.all()
 

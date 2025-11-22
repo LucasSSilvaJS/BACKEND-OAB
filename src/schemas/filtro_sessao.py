@@ -15,13 +15,16 @@ class FiltroSessao(BaseModel):
     skip: int = 0
     limit: int = 100
     administrador_id: Optional[int] = None
-    data_inicio_de: Optional[date] = None  # Data de início >=
-    data_inicio_ate: Optional[date] = None  # Data de início <=
-    data_finalizacao_de: Optional[date] = None  # Data de finalização >=
-    data_finalizacao_ate: Optional[date] = None  # Data de finalização <=
-    data_especifica: Optional[date] = None  # Filtro por data específica
-    ip_computador: Optional[str] = None  # Busca parcial no IP
-    apenas_ativas: Optional[bool] = None  # Apenas sessões ativas
+    computador_id: Optional[int] = None  # Filtrar por ID do computador
+    usuario_id: Optional[int] = None  # Filtrar por ID do usuário
+    inicio_de: Optional[datetime] = None  # Hora de início >= (DateTime)
+    inicio_ate: Optional[datetime] = None  # Hora de início <= (DateTime)
+    finalizacao_de: Optional[datetime] = None  # Hora de finalização >= (DateTime)
+    finalizacao_ate: Optional[datetime] = None  # Hora de finalização <= (DateTime)
+    data_especifica: Optional[date] = None  # Filtro por data específica (campo 'data')
+    ip_computador: Optional[str] = None  # Busca parcial no IP do computador
+    apenas_ativas: Optional[bool] = None  # Apenas sessões ativas (ativado=True e final_de_sessao IS NULL)
+    apenas_inativas: Optional[bool] = None  # Apenas sessões inativas (ativado=False OU final_de_sessao IS NOT NULL)
     ordenar_por_data: Optional[OrdenacaoData] = OrdenacaoData.MAIS_RECENTE_PRIMEIRO
     ordenar_por_usuario: Optional[bool] = False  # Ordenar alfabeticamente por nome do usuário
 
