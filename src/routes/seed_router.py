@@ -2,14 +2,13 @@
 Router para popular o banco de dados em massa.
 Cada endpoint recebe um array de objetos e insere todos de uma vez.
 
-⚠️ ATENÇÃO: Todas as rotas requerem autenticação como Analista de TI.
+⚠️ ATENÇÃO: Estas rotas NÃO requerem autenticação para facilitar o seed inicial do banco.
 """
 from typing import List, Dict, Any
 from fastapi import APIRouter, Depends, status, HTTPException, Body
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 from src.routes.dependencies import get_db
-from src.routes.auth_dependencies import require_analista, AuthUser
 from src.database import seed
 
 router = APIRouter(
@@ -143,7 +142,6 @@ def popular_cadastros(
         ],
         description="Array de objetos com os dados dos cadastros"
     ),
-    current_user: AuthUser = Depends(require_analista),
     db: Session = Depends(get_db)
 ):
     try:
@@ -190,7 +188,6 @@ def popular_subsecionais(
         ],
         description="Array de objetos com os dados das subseccionais"
     ),
-    current_user: AuthUser = Depends(require_analista),
     db: Session = Depends(get_db)
 ):
     try:
@@ -253,7 +250,6 @@ def popular_unidades(
         ],
         description="Array de objetos com os dados das unidades"
     ),
-    current_user: AuthUser = Depends(require_analista),
     db: Session = Depends(get_db)
 ):
     try:
@@ -313,7 +309,6 @@ def popular_salas_coworking(
         ],
         description="Array de objetos com os dados das salas de coworking"
     ),
-    current_user: AuthUser = Depends(require_analista),
     db: Session = Depends(get_db)
 ):
     try:
@@ -375,7 +370,6 @@ def popular_computadores(
         ],
         description="Array de objetos com os dados dos computadores"
     ),
-    current_user: AuthUser = Depends(require_analista),
     db: Session = Depends(get_db)
 ):
     try:
@@ -436,7 +430,6 @@ def popular_usuarios_advogados(
         ],
         description="Array de objetos com os dados dos usuários advogados"
     ),
-    current_user: AuthUser = Depends(require_analista),
     db: Session = Depends(get_db)
 ):
     try:
@@ -493,7 +486,6 @@ def popular_analistas_ti(
         ],
         description="Array de objetos com os dados dos analistas de TI"
     ),
-    current_user: AuthUser = Depends(require_analista),
     db: Session = Depends(get_db)
 ):
     try:
@@ -558,7 +550,6 @@ def popular_administradores_sala(
         ],
         description="Array de objetos com os dados dos administradores de sala"
     ),
-    current_user: AuthUser = Depends(require_analista),
     db: Session = Depends(get_db)
 ):
     try:
@@ -629,7 +620,6 @@ def popular_sessoes(
         ],
         description="Array de objetos com os dados das sessões"
     ),
-    current_user: AuthUser = Depends(require_analista),
     db: Session = Depends(get_db)
 ):
     try:
