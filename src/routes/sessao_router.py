@@ -134,11 +134,23 @@ def listar_sessoes(
     6. Combinar múltiplos filtros:
        GET /sessoes?data_especifica=2025-11-22&apenas_ativas=true&ordenar_por_data=mais_recente&limit=50
     """
+    # Normalizar a data para evitar problemas de timezone
+    # Garantir que seja tratada como date puro, sem timezone
+    data_normalizada = None
+    if data_especifica is not None:
+        if isinstance(data_especifica, datetime):
+            data_normalizada = data_especifica.date()
+        elif isinstance(data_especifica, date):
+            data_normalizada = data_especifica
+        else:
+            # Se for string, tentar converter
+            data_normalizada = data_especifica
+    
     filtros = FiltroSessao(
         skip=skip,
         limit=limit,
         administrador_id=administrador_id,
-        data_especifica=data_especifica,
+        data_especifica=data_normalizada,
         inicio=inicio,
         finalizacao=finalizacao,
         ip_computador=ip_computador,

@@ -73,8 +73,15 @@ class SessaoRepository(BaseRepository[Sessao]):
             filtros_aplicados.append(Sessao.administrador_id == filtros.administrador_id)
         
         # Filtro por data específica (campo 'data' da sessão) - igualdade exata
+        # Normalizar a data para garantir comparação correta sem problemas de timezone
         if filtros.data_especifica is not None:
-            filtros_aplicados.append(Sessao.data == filtros.data_especifica)
+            # Garantir que a data seja tratada como date puro, sem timezone
+            data_filtro = filtros.data_especifica
+            if isinstance(data_filtro, datetime):
+                data_filtro = data_filtro.date()
+            # Usar func.date() para garantir comparação apenas da parte da data, sem considerar timezone
+            # Isso evita problemas quando o banco armazena com timezone ou quando há conversão de timezone
+            filtros_aplicados.append(func.date(Sessao.data) == data_filtro)
         
         # Filtro por hora de início (>= hora informada no dia de data_especifica)
         if filtros.inicio is not None:
