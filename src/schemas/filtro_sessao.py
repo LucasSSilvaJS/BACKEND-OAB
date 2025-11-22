@@ -1,7 +1,7 @@
-from typing import Optional, Union
-from datetime import date, datetime, time
+from typing import Optional
+from datetime import datetime
 from enum import Enum
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field
 
 
 class OrdenacaoData(str, Enum):
@@ -15,17 +15,8 @@ class FiltroSessao(BaseModel):
     skip: int = 0
     limit: int = 100
     administrador_id: Optional[int] = None
-    data_especifica: Optional[date] = Field(None, description="Filtrar por data específica (igualdade exata) - deve ser usada junto com inicio/finalizacao")
-    inicio: Optional[datetime] = Field(None, description="Hora mínima de início (>=). Quando usado com data_especifica, combina a data com o horário e filtra sessões com início >= essa hora")
-    finalizacao: Optional[datetime] = Field(None, description="Hora mínima de finalização (>=). Quando usado com data_especifica, combina a data com o horário e filtra sessões com finalização >= essa hora")
+    datetime_inicio: Optional[datetime] = Field(None, description="DateTime mínimo para filtrar sessões. Retorna sessões com inicio_de_sessao >= datetime_inicio")
     ip_computador: Optional[str] = None  # Busca parcial no IP do computador (string)
     apenas_ativas: Optional[bool] = None  # Apenas sessões ativas (True) ou todas (False/None)
     ordenar_por_data: Optional[OrdenacaoData] = OrdenacaoData.MAIS_RECENTE_PRIMEIRO
-    
-    @model_validator(mode='after')
-    def validar_inicio_finalizacao_com_data(self):
-        """Valida que inicio e finalizacao sejam usados apenas com data_especifica"""
-        if (self.inicio is not None or self.finalizacao is not None) and self.data_especifica is None:
-            raise ValueError("Os campos 'inicio' e 'finalizacao' devem ser usados junto com 'data_especifica'")
-        return self
 

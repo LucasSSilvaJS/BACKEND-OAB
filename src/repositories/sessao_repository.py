@@ -72,36 +72,9 @@ class SessaoRepository(BaseRepository[Sessao]):
         if filtros.administrador_id is not None:
             filtros_aplicados.append(Sessao.administrador_id == filtros.administrador_id)
         
-        # Filtro por data específica (campo 'data' da sessão) - igualdade exata
-        # Normalizar a data para garantir comparação correta sem problemas de timezone
-        if filtros.data_especifica is not None:
-            # Garantir que a data seja tratada como date puro, sem timezone
-            data_filtro = filtros.data_especifica
-            if isinstance(data_filtro, datetime):
-                data_filtro = data_filtro.date()
-            # Usar func.date() para garantir comparação apenas da parte da data, sem considerar timezone
-            # Isso evita problemas quando o banco armazena com timezone ou quando há conversão de timezone
-            filtros_aplicados.append(func.date(Sessao.data) == data_filtro)
-        
-        # Filtro por hora de início (>= hora informada no dia de data_especifica)
-        if filtros.inicio is not None:
-            if filtros.data_especifica is not None:
-                # Combinar data de data_especifica com horário de inicio e usar >=
-                datetime_inicio = datetime.combine(filtros.data_especifica, filtros.inicio.time())
-                filtros_aplicados.append(Sessao.inicio_de_sessao >= datetime_inicio)
-            else:
-                # Se não tem data_especifica, usar >= com datetime completo
-                filtros_aplicados.append(Sessao.inicio_de_sessao >= filtros.inicio)
-        
-        # Filtro por hora de finalização (>= hora informada no dia de data_especifica)
-        if filtros.finalizacao is not None:
-            if filtros.data_especifica is not None:
-                # Combinar data de data_especifica com horário de finalizacao e usar >=
-                datetime_finalizacao = datetime.combine(filtros.data_especifica, filtros.finalizacao.time())
-                filtros_aplicados.append(Sessao.final_de_sessao >= datetime_finalizacao)
-            else:
-                # Se não tem data_especifica, usar >= com datetime completo
-                filtros_aplicados.append(Sessao.final_de_sessao >= filtros.finalizacao)
+        # Filtro por datetime mínimo de início (>= datetime_inicio)
+        if filtros.datetime_inicio is not None:
+            filtros_aplicados.append(Sessao.inicio_de_sessao >= filtros.datetime_inicio)
         
         # Filtro por IP do computador (busca parcial) - usar relacionamento direto
         if filtros.ip_computador and filtros.ip_computador.strip():

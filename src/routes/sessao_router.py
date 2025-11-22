@@ -55,8 +55,7 @@ def criar_sessao(
     **Filtros disponíveis:**
     - Paginação (skip, limit)
     - Por ID do administrador
-    - Por hora de início/fim (DateTime) - usar junto com data_especifica
-    - Por data específica (igualdade exata - campo 'data')
+    - Por datetime mínimo de início (>= datetime_inicio)
     - Por IP do computador (busca parcial - não precisa do IP completo)
     - Status (ativas/inativas)
     - Ordenação por data (mais recente ou mais antiga primeiro)
@@ -66,9 +65,7 @@ def listar_sessoes(
     skip: int = Query(0, ge=0, description="Número de registros a pular (paginação)"),
     limit: int = Query(100, ge=1, le=1000, description="Número máximo de registros (padrão: 100, máx: 1000)"),
     administrador_id: Optional[int] = Query(None, description="Filtrar por ID do administrador"),
-    data_especifica: Optional[date] = Query(None, description="Filtrar por data específica (igualdade exata) - campo 'data' da sessão (YYYY-MM-DD). Obrigatório para usar inicio/finalizacao"),
-    inicio: Optional[datetime] = Query(None, description="Hora mínima de início (>=). Quando usado com data_especifica, combina a data com o horário e filtra sessões com início >= essa hora. Ex: data_especifica=2025-11-22 + inicio=08:00:00 = todas sessões com início >= 2025-11-22T08:00:00"),
-    finalizacao: Optional[datetime] = Query(None, description="Hora mínima de finalização (>=). Quando usado com data_especifica, combina a data com o horário e filtra sessões com finalização >= essa hora. Ex: data_especifica=2025-11-22 + finalizacao=18:00:00 = todas sessões com finalização >= 2025-11-22T18:00:00"),
+    datetime_inicio: Optional[datetime] = Query(None, description="DateTime mínimo para filtrar sessões por início. Retorna sessões com inicio_de_sessao >= datetime_inicio. Ex: 2025-11-22T08:00:00"),
     ip_computador: Optional[str] = Query(None, description="Buscar por IP do computador - busca parcial (não precisa preencher o IP completo). Ex: '192.168' encontra '192.168.1.100', '192.168.0.50', etc."),
     apenas_ativas: Optional[bool] = Query(None, description="True: apenas sessões ativas | False: apenas sessões inativas | None: todas"),
     ordenar_por_data: OrdenacaoData = Query(
@@ -87,38 +84,22 @@ def listar_sessoes(
     - `final_de_sessao` (DateTime, nullable): Data e hora de finalização
     - `ativado` (Boolean): Status da sessão
     
+    **Filtros de DateTime:**
+    - `datetime_inicio`: DateTime mínimo para filtrar por início de sessão (>=)
+    
     **Regras importantes:**
-    - `inicio` e `finalizacao` DEVEM ser usados JUNTOS com `data_especifica`
-    - Se `inicio` ou `finalizacao` forem informados sem `data_especifica`, retornará erro
-    - Quando `data_especifica` e `inicio`/`finalizacao` são informados juntos, o sistema **combina** a data de `data_especifica` com o horário e filtra sessões com **início/finalização >= hora informada**
-    - Exemplo: `data_especifica=2025-11-22` + `inicio=08:00:00` → busca sessões que começaram em `>= 2025-11-22T08:00:00` (incluindo 08:00, 09:00, 10:00, etc.)
+    - `datetime_inicio`: retorna sessões com `inicio_de_sessao >= datetime_inicio`
     - `apenas_ativas=true`: retorna apenas sessões ativas (ativado=True e final_de_sessao IS NULL)
     - `apenas_ativas=false`: retorna apenas sessões inativas (ativado=False OU final_de_sessao IS NOT NULL)
     - `apenas_ativas=None`: retorna todas as sessões
     
     **Exemplos de uso:**
     
-    1. Filtrar sessões de uma data específica (igualdade exata):
-       GET /sessoes?data_especifica=2025-11-22&apenas_ativas=true
-       # Retorna apenas sessões com data = 2025-11-22
+    1. Filtrar sessões a partir de um datetime mínimo de início:
+       GET /sessoes?datetime_inicio=2025-11-22T08:00:00
+       # Retorna sessões que começaram em 2025-11-22 às 08:00:00 ou depois
     
-    2. Filtrar por data específica e hora mínima de início (>=):
-       GET /sessoes?data_especifica=2025-11-22&inicio=2025-11-22T08:00:00
-       # O sistema combina: data_especifica (2025-11-22) + horário de inicio (08:00:00)
-       # Resultado: busca sessões com data = 2025-11-22 que começaram >= 08:00:00
-       # Retorna: 08:00, 09:00, 10:00, 15:30, etc. (todas >= 08:00)
-       
-       # O sistema ignora a data de inicio e usa apenas o horário:
-       GET /sessoes?data_especifica=2025-11-22&inicio=2025-01-01T08:00:00
-       # Resultado: busca sessões com data = 2025-11-22 que começaram >= 08:00:00
-    
-    3. Filtrar por data específica, hora mínima de início e finalização (>=):
-       GET /sessoes?data_especifica=2025-11-22&inicio=2025-11-22T08:00:00&finalizacao=2025-11-22T18:00:00
-       # Resultado: sessões com data = 2025-11-22
-       #   - início >= 08:00:00 (08:00, 09:00, 10:00, etc.)
-       #   - finalização >= 18:00:00 (18:00, 19:00, 20:00, etc.)
-    
-    4. Buscar por IP do computador (busca parcial - não precisa do IP completo):
+    2. Buscar por IP do computador (busca parcial - não precisa do IP completo):
        GET /sessoes?ip_computador=192.168
        # Encontra: 192.168.1.100, 192.168.0.50, 192.168.10.5, etc.
        
@@ -128,31 +109,17 @@ def listar_sessoes(
        GET /sessoes?ip_computador=100
        # Encontra qualquer IP que contenha "100": 192.168.1.100, 10.0.0.100, etc.
     
-    5. Filtrar apenas sessões inativas:
+    3. Filtrar apenas sessões inativas:
        GET /sessoes?apenas_ativas=false
     
-    6. Combinar múltiplos filtros:
-       GET /sessoes?data_especifica=2025-11-22&apenas_ativas=true&ordenar_por_data=mais_recente&limit=50
+    4. Combinar múltiplos filtros:
+       GET /sessoes?datetime_inicio=2025-11-22T08:00:00&apenas_ativas=true&ordenar_por_data=mais_recente&limit=50
     """
-    # Normalizar a data para evitar problemas de timezone
-    # Garantir que seja tratada como date puro, sem timezone
-    data_normalizada = None
-    if data_especifica is not None:
-        if isinstance(data_especifica, datetime):
-            data_normalizada = data_especifica.date()
-        elif isinstance(data_especifica, date):
-            data_normalizada = data_especifica
-        else:
-            # Se for string, tentar converter
-            data_normalizada = data_especifica
-    
     filtros = FiltroSessao(
         skip=skip,
         limit=limit,
         administrador_id=administrador_id,
-        data_especifica=data_normalizada,
-        inicio=inicio,
-        finalizacao=finalizacao,
+        datetime_inicio=datetime_inicio,
         ip_computador=ip_computador,
         apenas_ativas=apenas_ativas,
         ordenar_por_data=ordenar_por_data
