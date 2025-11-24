@@ -6,7 +6,8 @@ from src.repositories.cadastro_repository import CadastroRepository
 from src.schemas.administrador_sala import (
     AdministradorSalaCreate,
     AdministradorSalaUpdate,
-    AdministradorSalaResponse
+    AdministradorSalaResponse,
+    AdministradorVinculacaoCompletaResponse
 )
 from src.utils.security import hash_password
 
@@ -86,4 +87,14 @@ class AdministradorSalaService:
                 detail="Administrador não encontrado"
             )
         return self.repository.delete(db_administrador)
+
+    def obter_vinculacao_completa(self, admin_id: int) -> AdministradorVinculacaoCompletaResponse:
+        """Retorna os IDs e nomes das entidades vinculadas ao administrador"""
+        vinculacao = self.repository.get_vinculacao_completa(admin_id)
+        if not vinculacao:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Administrador não encontrado"
+            )
+        return AdministradorVinculacaoCompletaResponse(**vinculacao)
 

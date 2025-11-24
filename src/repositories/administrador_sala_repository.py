@@ -34,3 +34,51 @@ class AdministradorSalaRepository(BaseRepository[Administrador_sala_coworking]):
     def delete(self, db_obj: Administrador_sala_coworking) -> bool:
         return super().delete(db_obj)
 
+    def get_vinculacao_completa(self, admin_id: int) -> Optional[dict]:
+        """Retorna os IDs e nomes vinculados ao administrador (coworking, unidade, subsecional)"""
+        from src.entities.sala_coworking import Sala_coworking
+        
+        administrador = self.get_by_id(admin_id)
+        if not administrador:
+            return None
+        
+        # Buscar sala vinculada ao administrador com relacionamentos
+        sala = self.db.query(Sala_coworking).options(
+            joinedload(Sala_coworking.unidade),
+            joinedload(Sala_coworking.subsecional)
+        ).filter(
+            Sala_coworking.administrador_id == admin_id
+        ).first()
+        
+        if not sala:
+            return {
+                "coworking": None,
+                "unidade": None,
+                "subsecional": None
+            }
+        
+        resultado = {
+            "coworking": {
+                "id": sala.coworking_id,
+                "nome": sala.nome_da_sala
+            },
+            "unidade": None,
+            "subsecional": None
+        }
+        
+        # Buscar informações da unidade
+        if sala.unidade:
+            resultado["unidade"] = {
+                "id": sala.unidade.unidade_id,
+                "nome": sala.unidade.nome
+            }
+        
+        # Buscar informações da subsecional
+        if sala.subsecional:
+            resultado["subsecional"] = {
+                "id": sala.subsecional.subsecional_id,
+                "nome": sala.subsecional.nome
+            }
+        
+        return resultado
+

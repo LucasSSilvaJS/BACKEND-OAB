@@ -32,3 +32,18 @@ class AdministradorSalaResponse(BaseModel):
     class Config:
         from_attributes = True
 
+
+class VinculacaoInfo(BaseModel):
+    """Informações de vinculação de uma entidade"""
+    id: Optional[int] = None
+    nome: Optional[str] = None
+
+
+class AdministradorVinculacaoCompletaResponse(BaseModel):
+    """Resposta com IDs e nomes das entidades vinculadas ao administrador"""
+    coworking: Optional[VinculacaoInfo] = None
+    unidade: Optional[VinculacaoInfo] = None
+    subsecional: Optional[VinculacaoInfo] = None
+
+    class Config:
+        from_attributes = True

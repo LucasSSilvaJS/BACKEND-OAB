@@ -6,7 +6,8 @@ from src.routes.auth_dependencies import require_any_user, AuthUser
 from src.schemas.administrador_sala import (
     AdministradorSalaCreate,
     AdministradorSalaUpdate,
-    AdministradorSalaResponse
+    AdministradorSalaResponse,
+    AdministradorVinculacaoCompletaResponse
 )
 from src.schemas.comum import MensagemResponse
 from src.services.administrador_sala_service import AdministradorSalaService
@@ -104,6 +105,29 @@ def atualizar_administrador(
     """
     service = AdministradorSalaService(db)
     return service.atualizar_administrador(admin_id, administrador)
+
+
+@router.get(
+    "/{admin_id}/vinculacao",
+    response_model=AdministradorVinculacaoCompletaResponse,
+    summary="Obter vinculação completa do administrador",
+    description="Retorna os IDs e nomes das entidades vinculadas ao administrador (sala coworking, unidade e subsecional).",
+)
+def obter_vinculacao_completa(
+    admin_id: int,
+    current_user: AuthUser = Depends(require_any_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Retorna os IDs e nomes das entidades vinculadas ao administrador de sala.
+
+    - **admin_id**: ID único do administrador de sala
+    - **coworking**: ID e nome da sala de coworking vinculada (pode ser None se não houver vinculação)
+    - **unidade**: ID e nome da unidade vinculada (pode ser None se não houver vinculação)
+    - **subsecional**: ID e nome da subsecional vinculada (pode ser None se não houver vinculação)
+    """
+    service = AdministradorSalaService(db)
+    return service.obter_vinculacao_completa(admin_id)
 
 
 @router.delete(
