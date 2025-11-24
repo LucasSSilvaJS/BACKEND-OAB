@@ -25,24 +25,41 @@ class DashboardRepository:
         
         Uma sessão é considerada ativa quando:
         - ativado == True
-        - final_de_sessao IS NULL (não foi finalizada)
+        
+        NOTA: Uma sessão ativa é uma sessão que está marcada como ativa no banco.
+        Se a sessão tem final_de_sessao preenchido mas ainda está ativada, 
+        ela será contada como ativa (pode ser uma inconsistência de dados, 
+        mas seguimos o que está no banco).
         
         IMPORTANTE: Sessões ativas são sempre contadas, independente do ano,
         pois uma sessão ativa é uma sessão que está acontecendo AGORA.
         O filtro de ano não se aplica a sessões ativas.
         """
-        query = self.db.query(Sessao).join(
-            Computador, Sessao.computador_id == Computador.computador_id
-        ).filter(
-            Computador.coworking_id == coworking_id,
-            Sessao.ativado == True,
-            Sessao.final_de_sessao.is_(None)
+        # Buscar IDs dos computadores da sala
+        computadores_ids = [
+            comp.computador_id 
+            for comp in self.db.query(Computador.computador_id).filter(
+                Computador.coworking_id == coworking_id
+            ).all()
+        ]
+        
+        if not computadores_ids:
+            return 0
+        
+        # Query usando IN para garantir que encontramos todas as sessões
+        # Contar apenas por ativado == True (seguindo o que está no banco)
+        query = self.db.query(Sessao).filter(
+            Sessao.computador_id.in_(computadores_ids),
+            Sessao.ativado == True  # Sessão está ativada (critério principal)
         )
         
         # NOTA: Não filtrar sessões ativas por ano, pois uma sessão ativa
         # é uma sessão que está acontecendo agora, independente de quando começou
+        # Também não verificar final_de_sessao, pois se está ativada no banco,
+        # deve ser contada como ativa
         
-        return query.count()
+        count = query.count()
+        return count
 
     def contar_total_sessoes(self, coworking_id: int, ano: Optional[int] = None) -> int:
         """Conta o total de sessões na sala coworking"""
