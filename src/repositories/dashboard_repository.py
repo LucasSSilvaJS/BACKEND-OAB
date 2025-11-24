@@ -21,7 +21,16 @@ class DashboardRepository:
         return sala is not None
 
     def contar_sessoes_ativas(self, coworking_id: int, ano: Optional[int] = None) -> int:
-        """Conta o número de sessões ativas na sala coworking"""
+        """Conta o número de sessões ativas na sala coworking
+        
+        Uma sessão é considerada ativa quando:
+        - ativado == True
+        - final_de_sessao IS NULL (não foi finalizada)
+        
+        IMPORTANTE: Sessões ativas são sempre contadas, independente do ano,
+        pois uma sessão ativa é uma sessão que está acontecendo AGORA.
+        O filtro de ano não se aplica a sessões ativas.
+        """
         query = self.db.query(Sessao).join(
             Computador, Sessao.computador_id == Computador.computador_id
         ).filter(
@@ -30,8 +39,8 @@ class DashboardRepository:
             Sessao.final_de_sessao.is_(None)
         )
         
-        if ano is not None:
-            query = query.filter(extract('year', Sessao.data) == ano)
+        # NOTA: Não filtrar sessões ativas por ano, pois uma sessão ativa
+        # é uma sessão que está acontecendo agora, independente de quando começou
         
         return query.count()
 

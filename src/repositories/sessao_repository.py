@@ -49,10 +49,18 @@ class SessaoRepository(BaseRepository[Sessao]):
         ).filter(Sessao.administrador_id == administrador_id).offset(skip).limit(limit).all()
 
     def get_ativas(self) -> List[Sessao]:
+        """Retorna todas as sessões ativas
+        Uma sessão é considerada ativa quando:
+        - ativado == True
+        - final_de_sessao IS NULL (não foi finalizada)
+        """
         return self.db.query(Sessao).options(
             joinedload(Sessao.computador).joinedload(Computador.sala).joinedload(Sala_coworking.subsecional),
             joinedload(Sessao.computador).joinedload(Computador.sala).joinedload(Sala_coworking.unidade).joinedload(Unidade.subsecional)
-        ).filter(Sessao.ativado == True).all()
+        ).filter(
+            Sessao.ativado == True,
+            Sessao.final_de_sessao.is_(None)
+        ).all()
 
     def get_por_data(self, data: date) -> List[Sessao]:
         return self.db.query(Sessao).options(
