@@ -2,6 +2,8 @@
 
 API REST para gerenciamento de salas de coworking da OAB. Sistema desenvolvido com FastAPI para controlar cadastros, sessões de uso, computadores, salas de coworking, unidades e subsecionais.
 
+[LINK DE ACESSO AO BACKEND DOCUMENTADO](https://backend-oab.onrender.com/docs)
+
 ## 📋 Sobre o Projeto
 
 Este projeto é uma API backend que permite o gerenciamento completo de salas de coworking da OAB, incluindo:
