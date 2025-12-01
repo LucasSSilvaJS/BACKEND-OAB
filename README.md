@@ -7,24 +7,29 @@ API REST para gerenciamento de salas de coworking da OAB. Sistema desenvolvido c
 Este projeto é uma API backend que permite o gerenciamento completo de salas de coworking da OAB, incluindo:
 
 - **Cadastros**: Gerenciamento de cadastros de pessoas (advogados, analistas, administradores)
-- **Sessões**: Controle de sessões de uso de computadores
+- **Sessões**: Controle de sessões de uso de computadores com sistema robusto de filtros
 - **Computadores**: Cadastro e gerenciamento de computadores
 - **Salas de Coworking**: Gerenciamento de salas de coworking
 - **Unidades**: Gerenciamento de unidades (SEDE ou FILIAL)
 - **Subsecionais**: Gerenciamento de subsecionais
 - **Usuários Advogados**: Gerenciamento de usuários advogados
+- **Autenticação**: Sistema completo de autenticação com JWT para três tipos de usuários
+- **Dashboard**: Dashboard com métricas e estatísticas de uso
+- **Relatórios**: Geração de relatórios inteligentes usando IA (Gemini)
 
 ## 🛠️ Tecnologias Utilizadas
 
 - **Python 3.8+**
 - **FastAPI** - Framework web moderno e rápido para construção de APIs
-- **SQLAlchemy** - ORM para Python
+- **SQLAlchemy 2.0+** - ORM para Python
 - **PyMySQL** - Driver MySQL para Python
 - **psycopg2-binary** - Driver PostgreSQL para Python
-- **Pydantic** - Validação de dados
+- **Pydantic 2.5+** - Validação de dados
 - **Uvicorn** - Servidor ASGI de alta performance
 - **Alembic** - Ferramenta de migração de banco de dados
-- **Passlib** - Biblioteca para hash de senhas
+- **Passlib** - Biblioteca para hash de senhas (bcrypt)
+- **python-jose** - Geração e validação de tokens JWT
+- **google-genai** - Integração com Google Gemini AI para relatórios inteligentes
 
 ## 📦 Requisitos
 
@@ -40,7 +45,7 @@ Antes de começar, certifique-se de ter instalado:
 ### 1. Clone o repositório
 
 ```bash
-git clone <url-do-repositorio>
+git clone https://github.com/LucasSSilvaJS/BACKEND-OAB.git
 cd BACKEND
 ```
 
@@ -103,6 +108,15 @@ API_URL=https://api.seusite.com
 
 Se não configurado, o Swagger mostrará apenas o servidor localhost.
 
+#### Opção 4: Chave da API Gemini (opcional, para relatórios)
+
+Para usar a funcionalidade de relatórios inteligentes:
+```env
+GEMINI_API_KEY=sua_chave_api_gemini
+```
+
+**Nota:** A funcionalidade de relatórios requer uma chave da API Gemini. Consulte a documentação em `CONFIGURACAO_GEMINI.md` para mais detalhes.
+
 ### 5. Crie o banco de dados
 
 #### Para MySQL:
@@ -153,17 +167,66 @@ A API possui documentação interativa automática gerada pelo Swagger/OpenAPI:
 
 A API possui os seguintes grupos de endpoints:
 
+#### 🔐 Autenticação
+- **`/api/v1/auth/login/advogado`** - Login de advogado (registro OAB + código de segurança)
+- **`/api/v1/auth/login/administrador`** - Login de administrador (usuário + senha)
+- **`/api/v1/auth/login/analista`** - Login de analista de TI (usuário + senha)
+
+#### 👥 Cadastros e Usuários
 - **`/api/v1/cadastros`** - Gerenciamento de cadastros
-- **`/api/v1/sessoes`** - Gerenciamento de sessões
-- **`/api/v1/computadores`** - Gerenciamento de computadores
-- **`/api/v1/salas-coworking`** - Gerenciamento de salas de coworking
-- **`/api/v1/unidades`** - Gerenciamento de unidades
-- **`/api/v1/subsecionais`** - Gerenciamento de subsecionais
 - **`/api/v1/usuarios-advogados`** - Gerenciamento de usuários advogados
+- **`/api/v1/analistas-ti`** - Gerenciamento de analistas de TI
+- **`/api/v1/administradores-sala`** - Gerenciamento de administradores de sala
+
+#### 💻 Sessões e Computadores
+- **`/api/v1/sessoes`** - Gerenciamento de sessões (com sistema robusto de filtros)
+- **`/api/v1/computadores`** - Gerenciamento de computadores
+
+#### 🏢 Estrutura Organizacional
+- **`/api/v1/salas-coworking`** - Gerenciamento de salas de coworking
+- **`/api/v1/unidades`** - Gerenciamento de unidades (SEDE ou FILIAL)
+- **`/api/v1/subsecionais`** - Gerenciamento de subsecionais
+
+#### 📊 Dashboard e Relatórios
+- **`/api/v1/dashboard`** - Dashboard com métricas e estatísticas
+- **`/api/v1/relatorios`** - Geração de relatórios inteligentes (requer autenticação de analista)
+
+#### 🌱 Seed (Desenvolvimento)
+- **`/api/v1/seed`** - Endpoints para popular o banco de dados com dados de teste
+
+#### 🔧 Utilitários
+- **`/`** - Endpoint raiz com informações da API
+- **`/health`** - Health check da API
+
+### 🔐 Sistema de Autenticação
+
+A API possui um sistema completo de autenticação baseado em JWT (JSON Web Tokens) com três tipos de usuários:
+
+1. **Advogados**: Autenticam usando registro OAB e código de segurança
+2. **Administradores de Sala**: Autenticam usando usuário e senha (hash bcrypt)
+3. **Analistas de TI**: Autenticam usando usuário e senha (hash bcrypt)
+
+**Como usar:**
+1. Faça login no endpoint apropriado (`/api/v1/auth/login/{tipo}`)
+2. Receba o token JWT na resposta
+3. Use o token no header `Authorization: Bearer <token>` para acessar endpoints protegidos
+
+Consulte `src/routes/AUTENTICACAO_EXEMPLO.md` para exemplos detalhados de uso.
 
 ### Exemplo de Uso
 
-#### Criar um cadastro
+#### 1. Login de Advogado
+
+```bash
+curl -X POST "http://localhost:8000/api/v1/auth/login/advogado" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "registro_oab": "OAB-PE-10001",
+    "codigo_de_seguranca": "123"
+  }'
+```
+
+#### 2. Criar um cadastro
 
 ```bash
 curl -X POST "http://localhost:8000/api/v1/cadastros" \
@@ -178,16 +241,18 @@ curl -X POST "http://localhost:8000/api/v1/cadastros" \
   }'
 ```
 
-#### Listar cadastros
+#### 3. Listar sessões com filtros
 
 ```bash
-curl -X GET "http://localhost:8000/api/v1/cadastros"
+curl -X GET "http://localhost:8000/api/v1/sessoes?administrador_id=1&apenas_ativas=true&skip=0&limit=50" \
+  -H "Authorization: Bearer <seu_token>"
 ```
 
-#### Obter um cadastro específico
+#### 4. Obter dashboard
 
 ```bash
-curl -X GET "http://localhost:8000/api/v1/cadastros/1"
+curl -X GET "http://localhost:8000/api/v1/dashboard?subsecional_id=1&unidade_id=1&coworking_id=1&ano=2025" \
+  -H "Authorization: Bearer <seu_token>"
 ```
 
 ## 📁 Estrutura do Projeto
@@ -196,45 +261,95 @@ curl -X GET "http://localhost:8000/api/v1/cadastros/1"
 BACKEND/
 │
 ├── src/
-│   ├── entities/          # Modelos do banco de dados (SQLAlchemy)
+│   ├── entities/              # Modelos do banco de dados (SQLAlchemy)
 │   │   ├── cadastro.py
 │   │   ├── computador.py
 │   │   ├── sessao.py
-│   │   └── ...
+│   │   ├── sala_coworking.py
+│   │   ├── unidade.py
+│   │   ├── subsecional.py
+│   │   ├── usuario_advogado.py
+│   │   ├── analista_de_ti.py
+│   │   ├── administrador_sala_coworking.py
+│   │   └── sessoes_analistas.py
 │   │
-│   ├── schemas/           # Schemas Pydantic para validação
+│   ├── schemas/               # Schemas Pydantic para validação
 │   │   ├── cadastro.py
 │   │   ├── sessao.py
-│   │   └── ...
+│   │   ├── computador.py
+│   │   ├── sala_coworking.py
+│   │   ├── unidade.py
+│   │   ├── subsecional.py
+│   │   ├── usuario_advogado.py
+│   │   ├── analista_de_ti.py
+│   │   ├── administrador_sala.py
+│   │   ├── auth.py
+│   │   ├── dashboard.py
+│   │   ├── relatorio.py
+│   │   ├── filtro_sessao.py
+│   │   └── comum.py
 │   │
-│   ├── repositories/      # Camada de acesso a dados
+│   ├── repositories/          # Camada de acesso a dados
 │   │   ├── base_repository.py
 │   │   ├── cadastro_repository.py
-│   │   └── ...
+│   │   ├── sessao_repository.py
+│   │   ├── computador_repository.py
+│   │   ├── sala_coworking_repository.py
+│   │   ├── unidade_repository.py
+│   │   ├── subsecional_repository.py
+│   │   ├── usuario_advogado_repository.py
+│   │   ├── analista_ti_repository.py
+│   │   ├── administrador_sala_repository.py
+│   │   └── dashboard_repository.py
 │   │
-│   ├── services/          # Lógica de negócio
+│   ├── services/              # Lógica de negócio
 │   │   ├── cadastro_service.py
 │   │   ├── sessao_service.py
-│   │   └── ...
+│   │   ├── computador_service.py
+│   │   ├── sala_coworking_service.py
+│   │   ├── unidade_service.py
+│   │   ├── subsecional_service.py
+│   │   ├── usuario_advogado_service.py
+│   │   ├── analista_ti_service.py
+│   │   ├── administrador_sala_service.py
+│   │   ├── dashboard_service.py
+│   │   └── relatorio_service.py
 │   │
-│   ├── routes/            # Rotas da API (FastAPI routers)
+│   ├── routes/                # Rotas da API (FastAPI routers)
+│   │   ├── auth_router.py
+│   │   ├── auth_dependencies.py
 │   │   ├── cadastro_router.py
 │   │   ├── sessao_router.py
+│   │   ├── computador_router.py
+│   │   ├── sala_coworking_router.py
+│   │   ├── unidade_router.py
+│   │   ├── subsecional_router.py
+│   │   ├── usuario_advogado_router.py
+│   │   ├── analista_ti_router.py
+│   │   ├── administrador_sala_router.py
+│   │   ├── dashboard_router.py
+│   │   ├── relatorio_router.py
+│   │   ├── seed_router.py
 │   │   ├── dependencies.py
-│   │   └── __init__.py
+│   │   └── AUTENTICACAO_EXEMPLO.md
 │   │
-│   ├── database/          # Configuração do banco de dados
+│   ├── database/              # Configuração do banco de dados
 │   │   ├── base.py
-│   │   └── connection.py
+│   │   ├── connection.py
+│   │   └── seed.py
 │   │
-│   ├── utils/             # Utilitários
+│   ├── utils/                  # Utilitários
 │   │   └── security.py
 │   │
-│   └── main.py            # Arquivo principal da aplicação
+│   └── main.py                # Arquivo principal da aplicação
 │
-├── requirements.txt        # Dependências do projeto
-├── .env                   # Variáveis de ambiente (criar)
-└── README.md             # Este arquivo
+├── requirements.txt           # Dependências do projeto
+├── .env                       # Variáveis de ambiente (criar)
+├── README.md                  # Este arquivo
+├── CONFIGURACAO_GEMINI.md     # Documentação sobre configuração do Gemini
+├── ATUALIZACAO_GEMINI_API.md  # Guia de atualização da API Gemini
+├── FILTROS_SESSOES.md         # Documentação sobre filtros de sessões
+└── EXEMPLO_RELATORIO.md       # Exemplos de relatórios
 ```
 
 ## 🔧 Configuração do Banco de Dados
@@ -270,20 +385,40 @@ Certifique-se de configurar corretamente o arquivo `.env`. Use uma das duas opç
 2. Explore os endpoints disponíveis
 3. Teste os endpoints diretamente na interface
 4. Veja os schemas de request/response
+5. Para endpoints protegidos, use o botão "Authorize" e insira seu token JWT
+
+### Sistema de Filtros de Sessões
+
+O endpoint `/api/v1/sessoes` possui um sistema robusto de filtros. Consulte `FILTROS_SESSOES.md` para documentação completa sobre:
+- Filtros por data, administrador, IP, status
+- Paginação e ordenação
+- Exemplos de uso
 
 ## 🔐 Segurança
 
-- Senhas são hasheadas usando bcrypt
-- Validação de dados usando Pydantic
-- Tratamento de erros HTTP adequado
-- Validação de unicidade (emails, CPFs, etc.)
+- **Autenticação JWT**: Tokens seguros para autenticação
+- **Hash de Senhas**: Senhas hasheadas usando bcrypt
+- **Validação de Dados**: Validação robusta usando Pydantic
+- **Tratamento de Erros**: Tratamento adequado de erros HTTP
+- **Validação de Unicidade**: Validação de unicidade (emails, CPFs, registros OAB, etc.)
+- **Controle de Acesso**: Diferentes níveis de acesso por tipo de usuário
 
 ## 📝 Notas Importantes
 
 - As tabelas são criadas automaticamente na primeira execução
-- Certifique-se de que o MySQL está rodando antes de iniciar a API
+- Certifique-se de que o banco de dados está rodando antes de iniciar a API
 - Use sempre um ambiente virtual para isolar as dependências
 - Mantenha o arquivo `.env` seguro e não o commite no repositório
+- Para usar relatórios inteligentes, configure a `GEMINI_API_KEY` no arquivo `.env`
+- Consulte a documentação específica em `src/routes/AUTENTICACAO_EXEMPLO.md` para exemplos de autenticação
+
+## 📚 Documentação Adicional
+
+- **Autenticação**: `src/routes/AUTENTICACAO_EXEMPLO.md` - Exemplos de uso do sistema de autenticação
+- **Filtros de Sessões**: `FILTROS_SESSOES.md` - Documentação completa do sistema de filtros
+- **Configuração Gemini**: `CONFIGURACAO_GEMINI.md` - Como configurar a API Gemini para relatórios
+- **Atualização Gemini**: `ATUALIZACAO_GEMINI_API.md` - Guia de atualização da API Gemini
+- **Exemplos de Relatórios**: `EXEMPLO_RELATORIO.md` - Exemplos de uso dos relatórios
 
 ## 🤝 Contribuindo
 
@@ -304,4 +439,3 @@ Para suporte, envie um email para: suporte@oab.org.br
 ---
 
 **Desenvolvido com ❤️ usando FastAPI**
-
